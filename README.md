@@ -1,1 +1,1 @@
-php artisan db:seed --class=UsersTableSeeder
+php artisan db:seed --class=Databaseseeder
