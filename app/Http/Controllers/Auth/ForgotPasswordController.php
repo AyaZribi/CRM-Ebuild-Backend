@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use App\Http\Controllers\Controller;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -47,6 +49,7 @@ class ForgotPasswordController extends Controller
             ? response()->json(['message' => __($status), 'token' => $request->input('token')], 200)
             : response()->json(['error' => __($status)], 500);
     }
+
 
 
     public function broker()

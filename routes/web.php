@@ -13,8 +13,21 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
-Route::view('reset-password/{token}', 'auth.reset-password')->name('password.reset');
 
+
+Route::post('/users', [AuthController::class, 'addUserWithPersonnelRole']);
+
+
+
+
+/*protected $middlewareGroups = [
+    'web' => [
+        // ...
+        \Laravel\Sanctum\Http\Middleware\CreateFreshApiToken::class,
+    ],
+
+    // ...
+];*/
 
 /*Route::post('password/email', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 Route::post('password/reset', [App\Http\Controllers\Auth\ResetPasswordController::class, 'reset'])->name('password.update');*/

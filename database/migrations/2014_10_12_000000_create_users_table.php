@@ -13,13 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('roles', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->unique();
-            $table->timestamps();
-        });
+
+
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            //$table->foreignId('role_id')->constrained()->default(1)->onDelete('cascade');
             $table->foreignId('role_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('email')->unique();
@@ -28,10 +26,7 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
         });
-       /* Schema::table('users', function (Blueprint $table) {
-            $table->unsignedBigInteger('role_id')->nullable();
-            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
-        });*/
+
     }
 
     /**
@@ -43,9 +38,6 @@ return new class extends Migration
     {
         Schema::dropIfExists('roles');
         Schema::dropIfExists('users');
-       /* Schema::table('users', function (Blueprint $table) {
-            //
-        });*/
 
     }
 };
