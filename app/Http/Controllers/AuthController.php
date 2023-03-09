@@ -106,6 +106,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:personnel',
             'phone_number' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
             'ID_card' => 'required|string|max:255',
             'Work_tasks' => 'required|string|max:255',
             'salary' => 'required|string|max:255',
@@ -122,6 +123,7 @@ class AuthController extends Controller
         $personnel->email = $data['email'];
         $personnel->password = Hash::make($password);
         $personnel->phone_number = $request->input('phone_number');
+        $personnel->address = $request->input('address');
         $personnel->ID_card = $request->input('ID_card');
         $personnel->Work_tasks = $request->input('Work_tasks');
         $personnel->salary = $request->input('salary');
@@ -194,6 +196,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:personnel,email,'.$personnel->id,
             'phone_number' => 'required|string|max:255',
+            'address' => 'required|string|max:255',
             'ID_card' => 'required|string|max:255',
             'Work_tasks' => 'required|string|max:255',
             'salary' => 'required|string|max:255',
@@ -205,6 +208,7 @@ class AuthController extends Controller
         $personnel->name = $data['name'];
         $personnel->email = $data['email'];
         $personnel->phone_number = $request->input('phone_number');
+        $personnel->address = $request->input('address');
         $personnel->ID_card = $request->input('ID_card');
         $personnel->Work_tasks = $request->input('Work_tasks');
         $personnel->salary = $request->input('salary');

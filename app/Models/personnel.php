@@ -11,6 +11,7 @@ class personnel extends Model
     protected $table = 'personnel';
 
     protected $fillable = [
+        'address',
         'phone_number',
         'ID_card',
         'Work_tasks',
