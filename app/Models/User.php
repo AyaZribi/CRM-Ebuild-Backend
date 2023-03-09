@@ -55,6 +55,10 @@ class User extends Authenticatable
 
         return $role->intersect($this->roles)->count() > 0;
     }
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
 
     public function roles(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
