@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 
-Route::post('/users', [AuthController::class, 'addUserWithPersonnelRole']);
 
 
 
@@ -23,7 +22,7 @@ Route::post('/users', [AuthController::class, 'addUserWithPersonnelRole']);
 /*protected $middlewareGroups = [
     'web' => [
         // ...
-        \Laravel\Sanctum\Http\Middleware\CreateFreshApiToken::class,
+       // \Laravel\Sanctum\Http\Middleware\CreateFreshApiToken::class,
     ],
 
     // ...

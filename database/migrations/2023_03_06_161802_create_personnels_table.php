@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('phone_number');
             $table->string('ID_card');
             $table->string('Work_tasks');
+            $table->boolean('subcontracting')->default(false);
             $table->string('salary');
 
             $table->timestamps();

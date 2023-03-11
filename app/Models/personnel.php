@@ -15,6 +15,7 @@ class personnel extends Model
         'phone_number',
         'ID_card',
         'Work_tasks',
+        'subcontracting',
         'salary',
     ];
 

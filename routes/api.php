@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClientController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -14,15 +15,19 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+
 Route::put('/user/password', 'App\Http\Controllers\AuthController@updatePassword')->middleware('auth');
 Route::view('reset-password/{token}', 'auth.reset-password')->name('password.reset');
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+
     Route::post('changePassword', [AuthController::class, 'ChangePassword']);
 
-    Route::post('/personnel', [AuthController::class, 'store']);
+    Route::post('/personnel', [AuthController::class, 'store1']);
+
 // View all personnel
     Route::get('/personnel',  [AuthController::class, 'index']);
 
@@ -31,11 +36,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Update a personnel
     Route::put('/personnel/{id}',  [AuthController::class, 'update']);
+
+    Route::post('/clients', [ClientController::class, 'storeclient']);
+    Route::put('/clients/{id}', [ClientController::class, 'updatec']);
+    Route::delete('/clients/{id}', [ClientController::class, 'deletec']);
+    Route::get('/clients', [ClientController::class, 'viewallc']);
+
+
 });
-
-
-
-
 
 Route::post('forgot-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'forgot']);
 Route::post('reset-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'reset']);

@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NewClientMail;
 use App\Mail\NewPersonnelMail;
 use App\Mail\NewUserEmail;
+use App\Models\Client;
 use App\Models\personnel;
 use App\Models\User;
 use App\Models\Role;
 
-use App\Rules\MatchOldPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -92,7 +93,7 @@ class AuthController extends Controller
 
 
 
-    public function store(Request $request)
+    public function store1(Request $request)
     {
         // Ensure the authenticated user has the admin role
         $user = User::with('roles')->find(Auth::id());
@@ -109,6 +110,7 @@ class AuthController extends Controller
             'address' => 'required|string|max:255',
             'ID_card' => 'required|string|max:255',
             'Work_tasks' => 'required|string|max:255',
+            'subcontracting' => 'boolean', // add validation rule for subcontracting
             'salary' => 'required|string|max:255',
 
             // Add other validation rules for your personnel attributes
@@ -126,6 +128,7 @@ class AuthController extends Controller
         $personnel->address = $request->input('address');
         $personnel->ID_card = $request->input('ID_card');
         $personnel->Work_tasks = $request->input('Work_tasks');
+        $personnel->subcontracting = $request->input('subcontracting'); // set the subcontracting attribute value
         $personnel->salary = $request->input('salary');
         $personnel->user_id = $request->user()->id; // set the user_id explicitly
         $personnel->save();
@@ -175,7 +178,7 @@ class AuthController extends Controller
     }
 
 // Update a personnel
-    public function update(Request $request, $id)
+   /* public function update(Request $request, $id)
     {
         // Ensure the authenticated user has the admin role
         $user = User::with('roles')->find(Auth::id());
@@ -199,6 +202,7 @@ class AuthController extends Controller
             'address' => 'required|string|max:255',
             'ID_card' => 'required|string|max:255',
             'Work_tasks' => 'required|string|max:255',
+            'subcontracting' => 'boolean' ,// add validation rule for subcontracting
             'salary' => 'required|string|max:255',
 
             // Add other validation rules for your personnel attributes
@@ -211,9 +215,11 @@ class AuthController extends Controller
         $personnel->address = $request->input('address');
         $personnel->ID_card = $request->input('ID_card');
         $personnel->Work_tasks = $request->input('Work_tasks');
+        $personnel->subcontracting = $request->input('subcontracting'); // set the subcontracting attribute value
         $personnel->salary = $request->input('salary');
         $personnel->save();
 
         return response()->json(['success' => true]);
-    }
+    }*/
+
 }
