@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\NewClientMail;
 use App\Mail\NewPersonnelMail;
-use App\Mail\NewUserEmail;
 use App\Models\Client;
 use App\Models\personnel;
 use App\Models\User;
@@ -13,16 +11,14 @@ use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-use Termwind\Components\Dd;
+
 
 class AuthController extends Controller
 {
 
-    public function login(Request $request)
+    /*public function login(Request $request)
     {
         $credentials = $this->credentials($request);
 
@@ -34,7 +30,28 @@ class AuthController extends Controller
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+    }*/
+    public function login(Request $request)
+    {
+        $email = $request->input('email');
+        $password = $request->input('password');
+
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            $user = Personnel::where('email', $email)->first();
+        }
+        if (!$user) {
+            $user = Client::where('email', $email)->first();
+        }
+
+        if ($user && Hash::check($password, $user->password)) {
+            $token = $user->createToken('Token Name')->plainTextToken;
+            return response()->json(['token' => $token], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
+
 
     protected function attemptLogin(array $credentials)
     {
@@ -128,57 +145,42 @@ class AuthController extends Controller
         $personnel->address = $request->input('address');
         $personnel->ID_card = $request->input('ID_card');
         $personnel->Work_tasks = $request->input('Work_tasks');
-        $personnel->subcontracting = $request->input('subcontracting'); // set the subcontracting attribute value
+        $personnel->subcontracting = $request->input('subcontracting');
         $personnel->salary = $request->input('salary');
-        $personnel->user_id = $request->user()->id; // set the user_id explicitly
         $personnel->save();
-
-
-        // Send an email to the new personnel with their login credentials
         Mail::to($personnel->email)->send(new NewPersonnelMail($personnel, $password));
 
         return response()->json(['success' => true]);
     }
+
     // View all personnel
     public function index(Request $request)
     {
-        // Ensure the authenticated user has the admin role
         if (!$request->user()->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-
-        // Retrieve all personnel from the database
         $personnel = Personnel::all();
-
-        // Return the personnel as a JSON response
         return response()->json(['personnel' => $personnel]);
     }
 
-// Delete a personnel
+
     public function destroy(Request $request, $id)
     {
-        // Ensure the authenticated user has the admin role
         $user = User::with('roles')->find(Auth::id());
-
         if (!$request->user()->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-
-        // Get the personnel
         $personnel = Personnel::find($id);
 
         if (!$personnel) {
             return response()->json(['error' => 'Personnel not found'], 404);
         }
-
-        // Delete the personnel
         $personnel->delete();
 
         return response()->json(['success' => true]);
     }
 
-// Update a personnel
-   /* public function update(Request $request, $id)
+        public function updatel(Request $request, $id)
     {
         // Ensure the authenticated user has the admin role
         $user = User::with('roles')->find(Auth::id());
@@ -220,6 +222,6 @@ class AuthController extends Controller
         $personnel->save();
 
         return response()->json(['success' => true]);
-    }*/
+    }
 
 }

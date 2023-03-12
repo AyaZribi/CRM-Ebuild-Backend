@@ -35,7 +35,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/personnel/{id}',  [AuthController::class, 'destroy']);
 
     // Update a personnel
-    Route::put('/personnel/{id}',  [AuthController::class, 'update']);
+    Route::put('/personnel/{id}',  [AuthController::class, 'updatel']);
 
     Route::post('/clients', [ClientController::class, 'storeclient']);
     Route::put('/clients/{id}', [ClientController::class, 'updatec']);
