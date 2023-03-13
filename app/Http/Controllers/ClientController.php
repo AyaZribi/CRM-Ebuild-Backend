@@ -16,6 +16,7 @@ class ClientController extends Controller
     {
         $user = User::with('roles')->find(Auth::id());
 
+
         if (!$request->user()->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
