@@ -40,6 +40,7 @@ class ClientController extends Controller
         // Generate a random 10 char password from below chars
         $random = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ234567890!$%^&!$%^&');
         $password = substr($random, 0, 10);
+        $client->password=$password;
         $client->save();
 
         if ($data['confirmation']) {
