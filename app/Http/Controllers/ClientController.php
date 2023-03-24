@@ -14,11 +14,9 @@ class ClientController extends Controller
 {
     public function storeclient(Request $request)
     {
-        $user = User::with('roles')->find(Auth::id());
-
-
-        if (!$request->user()->hasRole('admin')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
         }
 
         $data = $request->validate([
@@ -44,6 +42,14 @@ class ClientController extends Controller
         $client->password=$password;
         $client->save();
 
+        // Create a new user with role client in the user table
+        $user = new User();
+        $user->name = $data['name'];
+        $user->email = $data['email'];
+        $user->password = Hash::make($password);
+        $user->role = 'client';
+        $user->save();
+
         if ($data['confirmation']) {
             Mail::to($client->email)->send(new NewClientMail($client, $password));
 
@@ -55,12 +61,10 @@ class ClientController extends Controller
 
     public function updatec(Request $request, $id)
     {
-        $user = User::with('roles')->find(Auth::id());
-
-        if (!$request->user()->hasRole('admin')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
         }
-        response()->json(['message' => $user]);
 
         $data = $request->validate([
             'name' => 'string|max:255',
@@ -91,15 +95,21 @@ class ClientController extends Controller
         } else {
             return response()->json(['error' => 'Client not found'], 404);
         }
+        // Find the user record for the personnel
+        $user = User::where('email', $client->email)->first();
+
+        // Update the user record for the personnel
+        $user->name = $data['name'];
+        $user->email = $data['email'];
+        $user->save();
 
 
     }
     public function deletec(Request $request, $id)
     {
-        $user = User::with('roles')->find(Auth::id());
-
-        if (!$request->user()->hasRole('admin')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
         }
 
         $client = Client::find($id);
@@ -114,10 +124,9 @@ class ClientController extends Controller
 
     public function viewallc(Request $request)
     {
-        $user = User::with('roles')->find(Auth::id());
-
-        if (!$request->user()->hasRole('admin')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
         }
         $clients = Client::all();
         return response()->json(['clients' => $clients]);

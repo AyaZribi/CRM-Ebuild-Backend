@@ -19,36 +19,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // Créer les rôles par défaut
-        Role::createDefaultRoles();
-
-        DB::table('users')->delete();
-
-        // Créer l'administrateur
-        $this->createAdminUser('Admin', 'admin@example.com', 'password');
+        DB::table('users')->insert([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'), // replace 'password' with the actual password you want to use
+            'role' => 'admin',
+        ]);
     }
 
-    private function createAdminUser(string $name, string $email, string $password )
-    {
-        // Vérifier si un utilisateur "admin" existe déjà
-        $adminRole = Role::where('name', 'admin')->first();
-
-        if (!$adminRole) {
-            // Créer un rôle "admin" s'il n'existe pas déjà
-            $adminRole = Role::create(['name' => 'admin']);
-        }
-
-        // Vérifier si un utilisateur avec le même email existe déjà
-        $existingUser = User::where('email', $email)->first();
-
-        if (!$existingUser) {
-            // Créer l'utilisateur et l'assigner au rôle "admin"
-            $user = new User;
-            $user->name = $name;
-            $user->email = $email;
-            $user->password = Hash::make($password);
-            $user->role()->associate($adminRole);
-            $user->save();
-        }
-    }
 }

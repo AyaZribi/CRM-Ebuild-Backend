@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Validator;
 class AuthController extends Controller
 {
 
-    /*public function login(Request $request)
+    public function login(Request $request)
     {
         $credentials = $this->credentials($request);
 
@@ -26,31 +26,35 @@ class AuthController extends Controller
             $user = $request->user();
             $token = $user->createToken('Token Name')->plainTextToken;
 
-            return response()->json(['token' => $token], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-    }*/
-    public function login(Request $request)
-    {
-        $email = $request->input('email');
-        $password = $request->input('password');
-
-        $user = User::where('email', $email)->first();
-        if (!$user) {
-            $user = Personnel::where('email', $email)->first();
-        }
-        if (!$user) {
-            $user = Client::where('email', $email)->first();
-        }
-
-        if ($user && Hash::check($password, $user->password)) {
-            $token = $user->createToken('Token Name')->plainTextToken;
-            return response()->json(['token' => $token], 200);
+            return response()->json([
+                'token' => $token,
+                'role' => $user->role
+            ], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+
+    /* public function login(Request $request)
+     {
+         $email = $request->input('email');
+         $password = $request->input('password');
+
+         $user = User::where('email', $email)->first();
+         if (!$user) {
+             $user = Personnel::where('email', $email)->first();
+         }
+         if (!$user) {
+             $user = Client::where('email', $email)->first();
+         }
+
+         if ($user && Hash::check($password, $user->password)) {
+             $token = $user->createToken('Token Name')->plainTextToken;
+             return response()->json(['token' => $token], 200);
+         } else {
+             return response()->json(['error' => 'Unauthorized'], 401);
+         }
+     }*/
 
 
     protected function attemptLogin(array $credentials)
@@ -112,11 +116,9 @@ class AuthController extends Controller
 
     public function store1(Request $request)
     {
-        // Ensure the authenticated user has the admin role
-        $user = User::with('roles')->find(Auth::id());
-
-        if (!$request->user()->hasRole('admin')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
         }
 
         // Validate the request data
@@ -127,12 +129,11 @@ class AuthController extends Controller
             'address' => 'required|string|max:255',
             'ID_card' => 'required|string|max:255',
             'Work_tasks' => 'required|string|max:255',
-            'subcontracting' => 'boolean', // add validation rule for subcontracting
+            'subcontracting' => 'boolean',
             'salary' => 'required|string|max:255',
-
-            // Add other validation rules for your personnel attributes
         ]);
-        // generate random 10 char password from below chars
+
+        // Generate random 10 char password from below chars
         $random = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ234567890!$%^&!$%^&');
         $password = substr($random, 0, 10);
 
@@ -148,16 +149,29 @@ class AuthController extends Controller
         $personnel->subcontracting = $request->input('subcontracting');
         $personnel->salary = $request->input('salary');
         $personnel->save();
+
+        // Create a new user with role personnel in the user table
+        $user = new User();
+        $user->name = $data['name'];
+        $user->email = $data['email'];
+        $user->password = Hash::make($password);
+        $user->role = 'personnel';
+        $user->save();
+
+        // Send email to the new personnel with the generated password
         Mail::to($personnel->email)->send(new NewPersonnelMail($personnel, $password));
 
         return response()->json(['success' => true]);
     }
 
+
+
     // View all personnel
     public function index(Request $request)
     {
-        if (!$request->user()->hasRole('admin')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
         }
         $personnel = Personnel::all();
         return response()->json(['personnel' => $personnel]);
@@ -166,9 +180,9 @@ class AuthController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $user = User::with('roles')->find(Auth::id());
-        if (!$request->user()->hasRole('admin')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
         }
         $personnel = Personnel::find($id);
 
@@ -182,11 +196,9 @@ class AuthController extends Controller
 
         public function updatel(Request $request, $id)
     {
-        // Ensure the authenticated user has the admin role
-        $user = User::with('roles')->find(Auth::id());
-
-        if (!$request->user()->hasRole('admin')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
         }
 
         // Get the personnel
@@ -220,6 +232,14 @@ class AuthController extends Controller
         $personnel->subcontracting = $request->input('subcontracting'); // set the subcontracting attribute value
         $personnel->salary = $request->input('salary');
         $personnel->save();
+
+        // Find the user record for the personnel
+        $user = User::where('email', $personnel->email)->first();
+
+        // Update the user record for the personnel
+        $user->name = $data['name'];
+        $user->email = $data['email'];
+        $user->save();
 
         return response()->json(['success' => true]);
     }

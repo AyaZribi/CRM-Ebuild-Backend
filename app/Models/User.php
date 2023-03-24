@@ -22,6 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+
     ];
 
     /**
@@ -45,23 +47,23 @@ class User extends Authenticatable
 
     public function hasRole($role)
     {
-        if (!$this->relationLoaded('roles')) {
-            $this->load('roles');
-        }
-
-        if (is_string($role)) {
-            return $this->roles->contains('name', $role);
-        }
-
-        return $role->intersect($this->roles)->count() > 0;
+        return strtolower($this->role) === strtolower($role);
     }
-    public function role(): BelongsTo
+    public static function boot()
     {
-        return $this->belongsTo(Role::class);
+        parent::boot();
+
+        static::creating(function ($user) {
+            $user->role = 'personnel';
+        });
     }
 
-    public function roles(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public static function rules($id = null)
     {
-        return $this->belongsToMany(Role::class);
+        return [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $id,
+            'password' => 'required|string|min:8',
+        ];
     }
 }

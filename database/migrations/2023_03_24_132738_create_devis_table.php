@@ -13,9 +13,12 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('roles', function (Blueprint $table) {
+        Schema::create('devis', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->string('client');
+            $table->string('client_email');
+            $table->date('date_creation');
+            $table->integer('nombre_operations')->default(0);
             $table->timestamps();
         });
     }
@@ -27,7 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('roles');
-
+        Schema::dropIfExists('devis');
     }
 };
