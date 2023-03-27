@@ -14,6 +14,16 @@ class Devis extends Model
             $devis->date_creation = now();
         });
     }
+    public function getFormattedIdAttribute()
+    {
+        return 'Devis N° ' . str_pad($this->id, 6, '0', STR_PAD_LEFT);
+    }
+    protected $appends = ['formatted_id'];
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
+    }
+
     public function operations()
     {
         return $this->hasMany(Operation::class);

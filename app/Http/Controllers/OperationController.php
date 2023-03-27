@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Client;
 use App\Models\Devis;
 use App\Models\Operation;
 use Illuminate\Http\Request;
@@ -9,6 +10,48 @@ use Illuminate\Http\Request;
 class OperationController extends Controller
 {
     public function store(Request $request)
+    {
+        $request->validate([
+            'client_email' => 'required|string|email|max:255',
+            'operations' => 'required|array|min:1',
+            'operations.*.nature' => 'required|string|max:255',
+            'operations.*.quantité' => 'required|numeric|min:0',
+            'operations.*.montant_ht' => 'required|numeric|min:0',
+            'operations.*.taux_tva' => 'required|numeric|min:0',
+        ]);
+
+        $client = Client::where('email', $request->input('client_email'))->first();
+
+       /* if (!$client) {
+            // If the client does not exist, create a new client
+            $client = Client::create([
+                'name' => $request->input('client'),
+                'email' => $request->input('client_email'),
+            ]);
+        }*/
+
+        $devis = Devis::create([
+            'client'=>$client->name,
+            'client_email' => $request['client_email'],
+            'client_id' => $client->id,
+            'date_creation' => now(),
+        ]);
+
+        foreach ($request->input('operations') as $operationData) {
+            $operation = new Operation([
+                'nature' => $operationData['nature'],
+                'quantité' => $operationData['quantité'],
+                'montant_ht' => $operationData['montant_ht'],
+                'taux_tva' => $operationData['taux_tva'],
+                'montant_ttc' => $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100),
+            ]);
+
+            $devis->operations()->save($operation);
+        }
+
+        return response()->json($devis, 201);
+    }
+    /*public function store(Request $request)
     {
         $request->validate([
             'client' => 'required|string|max:255',
@@ -19,25 +62,26 @@ class OperationController extends Controller
             'operations.*.taux_tva' => 'required|numeric|min:0',
         ]);
 
-        $devis = new Devis();
-        $devis->client = $request->input('client');
-        $devis->client_email = $request->input('client_email');
-        $devis->date_creation = now();
-        $devis->save();
+        $devis = Devis::create([
+            'client' => $request->input('client'),
+            'client_email' => $request->input('client_email'),
+            'date_creation' => now(),
+        ]);
 
         foreach ($request->input('operations') as $operationData) {
-            $operation = new Operation();
-            $operation->devis_id = $devis->id;
-            $operation->nature = $operationData['nature'];
-            $operation->montant_ht = $operationData['montant_ht'];
-            $operation->taux_tva = $operationData['taux_tva'];
-            $operation->montant_ttc = $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100);
-            $operation->save();
-            response()->json(['message' => 'operations created successfully'], 201);
+            $operation = new Operation([
+                'nature' => $operationData['nature'],
+                'montant_ht' => $operationData['montant_ht'],
+                'taux_tva' => $operationData['taux_tva'],
+                'montant_ttc' => $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100),
+            ]);
+
+            $devis->operations()->save($operation);
         }
 
-        return response()->json(['message' => 'Devis created successfully'], 201);
-    }
+        return response()->json($devis, 201);
+    }*/
+
 
     /*public function store(Request $request)
     {

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DevisController;
+use App\Http\Controllers\FactureController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\PdfController;
 use Illuminate\Http\Request;
@@ -47,11 +48,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 });
-Route::apiResource('devis', DevisController::class);
+Route::apiResource('devis', OperationController::class);
 Route::post('devis/{devisId}/operations', [OperationController::class, 'store']);
 Route::put('devis/{devisId}/operations/{operationId}', [OperationController::class, 'update']);
 Route::delete('devis/{devisId}/operations/{operationId}', [OperationController::class, 'destroy']);
 Route::get('devis/{id}/pdf', [PdfController::class, 'generate']);
+
+Route::post('factures/add', [FactureController::class, 'store']);
+Route::get('/factures/{facture}/pdf', [FactureController::class, 'generatePdf']);
+
+
 
 
 Route::post('forgot-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'forgot']);

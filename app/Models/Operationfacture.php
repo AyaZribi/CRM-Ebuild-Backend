@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Operation extends Model
+class Operationfacture extends Model
 {
     use HasFactory;
     protected $fillable = [
@@ -17,10 +17,8 @@ class Operation extends Model
         'taux_tva',
         'montant_ttc',
     ];
-    public function devis()
+    public function facture()
     {
-        return $this->belongsTo(Devis::class);
+        return $this->belongsTo(Facture::class);
     }
-
-
 }

@@ -13,17 +13,17 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('operations', function (Blueprint $table) {
+        Schema::create('operationfactures', function (Blueprint $table) {
+
             $table->id();
-            $table->unsignedBigInteger('devis_id');
             $table->string('nature');
             $table->string('quantité');
             $table->decimal('montant_ht', 10, 2);
             $table->decimal('taux_tva', 5, 2);
             $table->decimal('montant_ttc', 10, 2);
+            $table->unsignedBigInteger('facture_id'); // Add the facture_id column
             $table->timestamps();
-
-            $table->foreign('devis_id')->references('id')->on('devis')->onDelete('cascade');
+            $table->foreign('facture_id')->references('id')->on('factures')->onDelete('cascade'); // Add the foreign key constraint
         });
     }
 
@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('operations');
+        Schema::dropIfExists('operationfactures');
     }
 };
