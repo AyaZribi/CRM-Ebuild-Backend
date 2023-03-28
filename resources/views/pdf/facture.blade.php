@@ -2,16 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ $facture->id }}</title>
+    <title>{{ $facture->formatted_id }}</title>
     <style>
         /* Add any custom CSS styles for the PDF here */
     </style>
 </head>
 <body>
-<h1>Facture {{ $facture->id }}</h1>
+<img src="{{ url('images/logo.png') }}" width="100" height="100" alt="Your Logo">
+<h1> {{ $facture->formatted_id }}</h1>
 
 <p>Client: {{ $facture->client }}</p>
 <p>Email: {{ $facture->client_email }}</p>
+<p>Phone Number: {{ $phone_number }}</p>
+<p>RNE: {{ $RNE }}</p>
+<p>{{ $facture->created_at->format('d/m/Y H:i:s') }}</p>
+<p>{{ $facture->nombre_operations }}</p>
 
 <table>
     <thead>

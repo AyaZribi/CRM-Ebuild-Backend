@@ -12,10 +12,16 @@ class Facture extends Model
         'client',
         'client_email',
         'date_creation',
+        'nombre_operations',
         'total_montant_ht',
         'total_montant_ttc',
         'total_montant_letters',
     ];
+    public function getFormattedIdAttribute()
+    {
+        return 'Facture N° ' . str_pad($this->id, 6, '0', STR_PAD_LEFT);
+    }
+    protected $appends = ['formatted_id'];
 
 
     protected static function booted()

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('client');
             $table->string('client_email');
             $table->date('date_creation');
+            $table->integer('nombre_operations')->default(0);
             $table->decimal('total_montant_ht', 10, 2)->nullable();
             $table->decimal('total_montant_ttc', 10, 2)->nullable();
             $table->string('total_montant_letters')->nullable();

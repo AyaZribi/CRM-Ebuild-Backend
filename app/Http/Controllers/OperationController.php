@@ -34,6 +34,7 @@ class OperationController extends Controller
             'client'=>$client->name,
             'client_email' => $request['client_email'],
             'client_id' => $client->id,
+            'nombre_operations' => count($request['operations']),
             'date_creation' => now(),
         ]);
 

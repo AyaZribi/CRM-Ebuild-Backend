@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Client;
 use App\Models\Facture;
 use App\Models\Operation;
 use App\Models\Operationfacture;
@@ -14,7 +15,6 @@ class FactureController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'client' => 'required|string|max:255',
             'client_email' => 'required|string|email|max:255',
             'operationfactures' => 'required|array|min:1',
             'operationfactures.*.nature' => 'required|string|max:255',
@@ -22,10 +22,14 @@ class FactureController extends Controller
             'operationfactures.*.montant_ht' => 'required|numeric|min:0',
             'operationfactures.*.taux_tva' => 'required|numeric|min:0',
         ]);
+        $client = Client::where('email', $request->input('client_email'))->first();
+
 
         $facture = Facture::create([
-            'client' => $request->input('client'),
-            'client_email' => $request->input('client_email'),
+            'client'=>$client->name,
+            'client_email' => $request['client_email'],
+            'client_id' => $client->id,
+            'nombre_operations' => count($request['operationfactures']),
             'date_creation' => now(),
         ]);
 
@@ -100,11 +104,11 @@ class FactureController extends Controller
         }
 
         if ($decPart == 0) {
-            $result .= 'dirhams';
+            $result .= 'TND';
         } elseif ($decPart == 1) {
-            $result .= 'dirham et une centime';
+            $result .= 'TND et une millime';
         } else {
-            $result .= 'dirhams et ' . $this->convertMontantToLetters($decPart) . ' centimes';
+            $result .= 'TND et ' . $this->convertMontantToLetters($decPart) . ' millimes';
         }
 
         return $result;
@@ -115,9 +119,15 @@ class FactureController extends Controller
     {
         // Get the facture data
         $facture->load('operationfactures');
+        // Retrieve the client by email
+        $client = Client::where('email', $facture->client_email)->first();
+
+        // Retrieve the phone number and RNE from the client object
+        $phone_number = $client->phone_number;
+        $RNE = $client->RNE;
 
         // Generate the HTML view for the facture
-        $html = View::make('pdf.facture', compact('facture'))->render();
+        $html = View::make('pdf.facture', compact('facture', 'phone_number', 'RNE'))->render();
 
         // Instantiate a new Dompdf instance
         $dompdf = new Dompdf();

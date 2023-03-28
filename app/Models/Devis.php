@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Devis extends Model
 {
-    protected $fillable = ['client', 'client_email', 'date_creation', 'nombre_operations'];
+    protected $fillable = ['client',
+        'client_email', 'date_creation', 'nombre_operations'];
     protected static function booted()
     {
         static::creating(function ($devis) {
