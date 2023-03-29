@@ -146,5 +146,77 @@ class FactureController extends Controller
     }
 
 
+    public function update(Request $request, $id)
+    {
+        $facture = Facture::findOrFail($id);
+
+        $request->validate([
+            'client_email' => 'required|string|email|max:255',
+            'operationfactures' => 'required|array|min:1',
+            'operationfactures.*.nature' => 'required|string|max:255',
+            'operationfactures.*.quantité' => 'required|integer|min:1',
+            'operationfactures.*.montant_ht' => 'required|numeric|min:0',
+            'operationfactures.*.taux_tva' => 'required|numeric|min:0',
+        ]);
+
+        $client = Client::where('email', $request->input('client_email'))->first();
+
+        $facture->update([
+            'client' => $client->name,
+            'client_email' => $request['client_email'],
+            'client_id' => $client->id,
+            'nombre_operations' => count($request['operationfactures']),
+            'date_creation' => now(),
+        ]);
+
+        $totalMontantHt = 0;
+        $totalMontantTtc = 0;
+
+        $facture->operationfactures()->delete();
+
+        foreach ($request->input('operationfactures') as $operationData) {
+            $operation = new Operationfacture([
+                'nature' => $operationData['nature'],
+                'quantité' => $operationData['quantité'],
+                'montant_ht' => $operationData['montant_ht'],
+                'taux_tva' => $operationData['taux_tva'],
+                'montant_ttc' => $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100),
+            ]);
+
+            $facture->operationfactures()->save($operation);
+
+            $totalMontantHt += $operationData['montant_ht'] * $operationData['quantité'];
+            $totalMontantTtc += $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100) * $operationData['quantité'];
+        }
+
+        $totalMontantTtc += 1.00; // Add 1% timbre
+
+        // Convert the total montant to letters
+        $totalMontantLetters = $this->convertMontantToLetters($totalMontantTtc);
+
+        $facture->update([
+            'total_montant_ht' => $totalMontantHt,
+            'total_montant_ttc' => $totalMontantTtc,
+            'total_montant_letters' => $totalMontantLetters,
+        ]);
+
+        return response()->json($facture, 200);
+    }
+
+    public function destroy($id)
+    {
+        $facture = Facture::findOrFail($id);
+        $facture->operationfactures()->delete();
+        $facture->delete();
+
+        return response()->json(null, 204);
+    }
+
+    public function show($id)
+    {
+        $facture = Facture::with('operationfactures')->findOrFail($id);
+
+        return response()->json($facture, 200);
+    }
 
 }

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="">
-<img src="{{ asset('images/logo.png') }}" width="100" height="100" alt="Your Logo">
 
 <head>
     <meta charset="utf-8">

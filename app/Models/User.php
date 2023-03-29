@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Validation\Rule;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -49,21 +50,28 @@ class User extends Authenticatable
     {
         return strtolower($this->role) === strtolower($role);
     }
-    public static function boot()
+   /* public static function boot()
     {
         parent::boot();
 
         static::creating(function ($user) {
             $user->role = 'personnel';
         });
-    }
+    }*/
 
     public static function rules($id = null)
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $id,
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($id),
+            ],
             'password' => 'required|string|min:8',
         ];
     }
+
 }

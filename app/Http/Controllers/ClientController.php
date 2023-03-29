@@ -132,4 +132,5 @@ class ClientController extends Controller
         return response()->json(['clients' => $clients]);
     }
 
+
 }

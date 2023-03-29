@@ -48,13 +48,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 });
-Route::apiResource('devis', OperationController::class);
-Route::post('devis/{devisId}/operations', [OperationController::class, 'store']);
-Route::put('devis/{devisId}/operations/{operationId}', [OperationController::class, 'update']);
-Route::delete('devis/{devisId}/operations/{operationId}', [OperationController::class, 'destroy']);
-Route::get('devis/{id}/pdf', [PdfController::class, 'generate']);
+Route::apiResource('devis', DevisController::class);
+Route::put('/devis/{id}', [DevisController::class, 'update']);
+Route::delete('/devis/{id}', [DevisController::class, 'destroy']);
+Route::get('/devis/{id}', [DevisController::class, 'show']);
+Route::get('/devis', [DevisController::class, 'showall']);
+Route::get('devis/{id}/pdf', [DevisController::class, 'generate']);
 
 Route::post('factures/add', [FactureController::class, 'store']);
+Route::put('/facture/{id}', [FactureController::class, 'update']);
+Route::delete('/facture/{id}', [FactureController::class, 'destroy']);
+Route::get('/facture/{id}', [FactureController::class, 'show']);
 Route::get('/factures/{facture}/pdf', [FactureController::class, 'generatePdf']);
 
 
