@@ -10,8 +10,12 @@ use Illuminate\Http\Request;
 
 class DevisController extends Controller
 {
-    public function store(Request $request)
-    {
+    public function store(Request $request){
+
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
         $request->validate([
             'client_email' => 'required|string|email|max:255',
             'operations' => 'required|array|min:1',
@@ -53,8 +57,12 @@ class DevisController extends Controller
 
         return response()->json($devis, 201);
     }
-    public function generate($id)
+    public function generate($id,Request $request)
     {
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
         $devis = Devis::with('operations')->findOrFail($id);
 
         // Retrieve the client by email
@@ -70,6 +78,10 @@ class DevisController extends Controller
     }
     public function update(Request $request, $id)
     {
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
         $request->validate([
             'client_email' => 'required|string|email|max:255',
             'operations' => 'required|array|min:1',
@@ -110,6 +122,10 @@ class DevisController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
         $devis = Devis::findOrFail($id);
         $devis->delete();
 
@@ -118,12 +134,20 @@ class DevisController extends Controller
 
     public function show(Request $request, $id)
     {
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
         $devis = Devis::with('operations')->findOrFail($id);
 
         return response()->json($devis, 200);
     }
-    public function showall()
+    public function showall(Request $request)
     {
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
         $devis = Devis::with('operations')->get();
         return response()->json($devis, 200);
     }

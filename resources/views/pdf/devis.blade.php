@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="">
 
@@ -20,7 +21,7 @@
             padding: 5px;
         }
         th {
-            background-color: #eee;
+            background-color: #FF0000;
         }
         .title {
             font-size: 18px;
@@ -28,16 +29,46 @@
             text-align: center;
             margin-bottom: 20px;
         }
+
+        .vertical-text {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: rotate(-90deg);
+            transform-origin: 0 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: -30px;
+            height: 100%;
+            color: #000080;
+            font-size: 20px;
+            width: 1000px; /* Adjust the width to fit your text */
+        }
     </style>
 </head>
 <body>
+
+<!-- Add company info here -->
+<div style=" margin-bottom: 5px;">
+    <h2 style="font-size: 30px; font-family: Bold ; color: #000080;">E BUILD</h2>
+    <p>SARL immatriculée au registre national des entreprises</p>
+    <p>sous l’identifiant unique 1751386/T.</p>
+    <p>Relevé d'identité bancaire (RIB): 00120 00770036879 </p>
+    <p>N° de téléphone:98157896</p>
+</div>
 <h1 class="title"> {{ $devis->formatted_id }}</h1>
-<table>
+
+<div class="vertical-text">{{ $devis->formatted_id }}</div>
+
+
+<table style="margin-left: 20px;">
     <thead>
     <tr>
         <th>Client</th>
-        <th>Email Client</th>
-
+        <th>Email du Client</th>
+        <th>N° de téléphone</th>
+        <th>RNE</th>
         <th>Date de création</th>
         <th>Nombre d'opérations</th>
     </tr>
@@ -46,16 +77,15 @@
     <tr>
         <td>{{ $devis->client }}</td>
         <td>{{ $devis->client_email }}</td>
-
+        <td>{{ $phone_number }}</td>
+        <td>{{ $RNE }}</td>
         <td>{{ $devis->created_at->format('d/m/Y H:i:s') }}</td>
         <td>{{ $devis->operations->count() }}</td>
     </tr>
     </tbody>
 </table>
 
-<strong>Phone:</strong> {{ $phone_number }}<br>
-<strong>RNE:</strong> {{ $RNE }}<br>
-<table>
+<table style="margin-left: 20px;">
     <thead>
     <tr>
         <th>Nature de l'opération</th>
@@ -77,3 +107,4 @@
 </table>
 </body>
 </html>
+

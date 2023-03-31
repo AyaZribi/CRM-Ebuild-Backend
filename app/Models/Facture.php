@@ -17,12 +17,15 @@ class Facture extends Model
         'total_montant_ttc',
         'total_montant_letters',
     ];
+
     public function getFormattedIdAttribute()
     {
-        return 'Facture N° ' . str_pad($this->id, 6, '0', STR_PAD_LEFT);
+        $monthInLetters = date('F', strtotime($this->date_creation));
+        $year = date('Y', strtotime($this->date_creation));
+        $factureNumber = str_pad($this->id, 6, '0', STR_PAD_LEFT);
+        return 'Facture N°FCT ' . $monthInLetters . '/' . $year . ' ' . $factureNumber;
     }
     protected $appends = ['formatted_id'];
-
 
     protected static function booted()
     {

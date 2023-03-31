@@ -2,18 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\FacturePdf;
 use App\Models\Client;
 use App\Models\Facture;
-use App\Models\Operation;
+use App\Models\User;
+
 use App\Models\Operationfacture;
+use Barryvdh\DomPDF\PDF;
 use Illuminate\Http\Request;
 use Dompdf\Dompdf;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
+use Illuminate\Http\Response;
 
 class FactureController extends Controller
 {
+
     public function store(Request $request)
     {
+        $user = $request->user();
+        if (!$user || !$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $request->validate([
             'client_email' => 'required|string|email|max:255',
             'operationfactures' => 'required|array|min:1',
@@ -65,6 +76,7 @@ class FactureController extends Controller
         ]);
 
         return response()->json($facture, 201);
+
     }
     function convertMontantToLetters($montant)
     {
@@ -114,40 +126,55 @@ class FactureController extends Controller
         return $result;
     }
 
-
-    public function generatePdf(Facture $facture)
+    public function generatePdf(Facture $facture, Request $request)
     {
-        // Get the facture data
-        $facture->load('operationfactures');
-        // Retrieve the client by email
-        $client = Client::where('email', $facture->client_email)->first();
+         $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
 
-        // Retrieve the phone number and RNE from the client object
+        $facture->load('operationfactures');
+        $client = Client::where('email', $facture->client_email)->first();
         $phone_number = $client->phone_number;
         $RNE = $client->RNE;
 
-        // Generate the HTML view for the facture
-        $html = View::make('pdf.facture', compact('facture', 'phone_number', 'RNE'))->render();
+        // Create an instance of the PDF class
+        $pdf = app(PDF::class);
 
-        // Instantiate a new Dompdf instance
+        // Set the path to your logo image file
+        $logo = asset('resources/images/logo.svg');
+
+        $html = View::make('pdf.facture', compact('facture', 'phone_number', 'RNE', 'logo','pdf'))->render();
+
         $dompdf = new Dompdf();
 
-        // Load the HTML content into Dompdf
         $dompdf->loadHtml($html);
+        $contxt = stream_context_create([
+            'ssl' => [
+                'verify_peer' => FALSE,
+                'verify_peer_name' => FALSE,
+                'allow_self_signed' => TRUE,
+            ]
+        ]);
 
-        // Set the paper size and orientation
+        // Set the options on the PDF instance
+        $pdf->setOptions(['isHTML5ParserEnabled' => true, 'isRemoteEnabled' => true]);
+        $pdf->getDomPDF()->setHttpContext($contxt);
         $dompdf->setPaper('A4', 'portrait');
-
-        // Render the PDF
         $dompdf->render();
 
-        // Output the PDF to the browser or save it to a file
         return $dompdf->stream("facture-{$facture->id}.pdf");
+
     }
+
 
 
     public function update(Request $request, $id)
     {
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
         $facture = Facture::findOrFail($id);
 
         $request->validate([
@@ -203,8 +230,12 @@ class FactureController extends Controller
         return response()->json($facture, 200);
     }
 
-    public function destroy($id)
+    public function destroy($id, Request $request)
     {
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
         $facture = Facture::findOrFail($id);
         $facture->operationfactures()->delete();
         $facture->delete();
@@ -212,11 +243,57 @@ class FactureController extends Controller
         return response()->json(null, 204);
     }
 
-    public function show($id)
+    public function show($id, Request $request)
     {
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
         $facture = Facture::with('operationfactures')->findOrFail($id);
 
         return response()->json($facture, 200);
     }
+    public function showall(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $facture = Facture::with('operationfactures')->get();
+        return response()->json($facture, 200);
+    }
+    public function storeAndSendPdf(Request $request)
+    {
+        // Call the existing `store` function to create the facture object
+        $facture = $this->store($request)->getData();
+
+        // Call the existing `generatePdf` function to generate the PDF
+        $pdf = $this->generatePdf(Facture::findOrFail($facture->id), $request);
+
+        // Retrieve the client by email
+        $client = Client::where('email', $facture->client_email)->first();
+
+        // Send the PDF to the client via email
+        Mail::to($client->email)->send(new FacturePdf($pdf));
+
+        // Return a success response
+        return response()->json(['message' => 'Facture created and PDF sent successfully'], 201);
+    }
+
+   /* public function sendPdfToClient(Facture $facture)
+    {
+        // Generate the PDF using the generatePdf method
+        $pdf = $this->generatePdf($facture);
+
+        // Create a response with the PDF contents and appropriate headers
+        $response = new Response($pdf);
+        $response->header('Content-Type', 'application/pdf');
+        $response->header('Content-Disposition', 'inline; filename="facture-'.$facture->id.'.pdf"');
+
+        // Return the response
+        return $response;
+    }*/
+
+
 
 }
