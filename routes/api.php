@@ -7,6 +7,8 @@ use App\Http\Controllers\FactureController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\TacheController;
+use App\Models\Facture;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -46,7 +48,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     ////////////////////////facture////////////////////////
 
     Route::post('factures/add', [FactureController::class, 'store']);
-    Route::post('/factures/send', [FactureController::class, 'sendPdfByEmail']);
+    Route::post('/factures/send', [FactureController::class, 'sendPdfToClient']);
+    Route::get('/sendpdf/{facture}', function(Facture $facture) {
+        $controller = new FactureController(); // Replace with your actual controller name
+        $controller->sendPdfCopyToClient($facture);
+
+        return redirect()->back()->with('success', 'PDF copy sent to client successfully!');
+    })->name('sendPdfCopyToClient');
+
     Route::put('/facture/{id}', [FactureController::class, 'update']);
     Route::delete('/facture/{id}', [FactureController::class, 'destroy']);
     Route::get('/facture/{id}', [FactureController::class, 'show']);
@@ -71,6 +80,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 });
+////////////////////////devis////////////////////////
+
+Route::post('/tache', [TacheController::class, 'store']);
+Route::post('/taches/{tache}/comments', [TacheController::class, 'createcomment']);
+Route::get('/devis/{id}', [DevisController::class, 'show']);
+Route::get('/devis', [DevisController::class, 'showall']);
+Route::get('devis/{id}/pdf', [DevisController::class, 'generate']);
+
 
 
 

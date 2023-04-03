@@ -28,4 +28,8 @@ class personnel extends Authenticatable
     {
         return $this->belongsToMany(Project::class);
     }
+    public function taches()
+    {
+        return $this->belongsToMany(Tache::class);
+    }
 }

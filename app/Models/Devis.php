@@ -17,15 +17,16 @@ class Devis extends Model
     }
     public function getFormattedIdAttribute()
     {
-        $monthInLetters = date('F', strtotime($this->date_creation));
+        $month = date('M', strtotime($this->date_creation));
         $year = date('Y', strtotime($this->date_creation));
-        $DevisNumber = str_pad($this->id, 6, '0', STR_PAD_LEFT);
-        return 'Devis N°DVI ' . $monthInLetters . '/' . $year . ' ' . $DevisNumber;
+        $factureNumber = str_pad($this->id, 4, '0', STR_PAD_LEFT);
+        return 'DVI ' . $month . '.' . $year . ' - ' . $factureNumber;
     }
-   /* public function getFormattedIdAttribute()
-    {
-        return 'Devis N° ' . str_pad($this->id, 6, '0', STR_PAD_LEFT);
-    }*/
+
+    /* public function getFormattedIdAttribute()
+     {
+         return 'Devis N° ' . str_pad($this->id, 6, '0', STR_PAD_LEFT);
+     }*/
     protected $appends = ['formatted_id'];
     public function client()
     {

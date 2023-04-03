@@ -9,6 +9,10 @@
             font-family: Arial, sans-serif;
             font-size: 12px;
         }
+        .facture-header {
+            background-color: #eee;
+            padding: 20px;
+        }
         .header {
             display: flex;
             align-items: center;
@@ -19,8 +23,7 @@
             height: 100px;
         }
         .header h1 {
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 15px;
             text-align: center;
             margin-bottom: 20px;
         }
@@ -34,9 +37,10 @@
             padding: 5px;
         }
         table th {
-            background-color: #FF0000;
+            background-color: #eee;
             font-weight: bold;
         }
+
         .totals {
             display: flex;
             align-items: center;
@@ -46,6 +50,7 @@
         .totals p {
             margin: 0;
             margin-left: 20px;
+            font-size: 14px;
         }
         .vertical-text {
             position: absolute;
@@ -58,60 +63,64 @@
             align-items: center;
             margin-left: -30px;
             height: 100%;
-            color: #000080;
-            font-size: 20px;
-            width: 1000px; /* Adjust the width to fit your text */
+            color: #FF0000;
+            font-size: 23px;
+            width: 1000px;
+            font-family: Bold/* Adjust the width to fit your text */
         }
+        .company-info {
+            float: left;
+            width: 50%;
+        }
+        .client-info {
+            float: right;
+            width: 50%;
+            text-align: right;
+        }
+        .clear {
+            clear: both;
+        }
+
     </style>
 </head>
 <body>
-<!-- Add company info here -->
-<div style=" margin-bottom: 5px;">
-    <h2 style="font-size: 30px; font-family: Bold ; color: #000080;">E BUILD</h2>
-    <p>SARL immatriculée au registre national des entreprises</p>
-    <p>sous l’identifiant unique 1751386/T.</p>
-    <p>Relevé d'identité bancaire (RIB): 00120 00770036879 </p>
-    <p>N° de téléphone:98157896</p>
-</div>
+<div class="vertical-text">Facture N°{{ $facture->formatted_id }}</div>
 <div class="header">
+    <div class="facture-header">
+        <div class="company-info">
+            <h2 style="font-size: 30px; font-family: Bold ; color: #FF0000;">EBUILD</h2>
+            <p style="font-size: 17px; font-family: Bold; display: inline-block;">De:EBUILD</p>
+            <p>SARL immatriculée au registre national des entreprises</p>
+            <p>sous l’identifiant unique 1751386/T.</p>
+            <p>Relevé d'identité bancaire (RIB): 00120 00770036879 </p>
+            <p><strong>N° de téléphone:</strong>98157896</p>
+        </div>
+        <div class="client-info" >
+            <h1 style="text-align: right;"><strong>Facture N° </strong><small>{{ $facture->formatted_id }}</small></h1>
+            <h1 style="margin-bottom: 22px;margin-left: 200px;"> <strong>Date:  </strong><small>{{ $facture->created_at->format('d/m/Y ') }}</small></h1>
+            <p style="font-size: 17px; font-family: Bold; display: inline-block;" >À: {{ $facture->client }}</p>
+            <p><strong>Email:</strong> {{ $facture->client_email }}</p>
+            <p><strong>N° de téléphone:</strong> {{ $phone_number }}</p>
+
+        </div>
+        <div class="clear"></div>
+    </div>
+</div>
+
+<div class="header" >
     <img src="{{ asset('resources/images/logo.svg') }}" alt="Logo">
 
 
-    <h1>{{ $facture->formatted_id }}</h1>
 </div>
 
-<div class="vertical-text">{{ $facture->formatted_id }}</div>
-<table style="margin-left: 20px;">
-    <thead>
-    <tr>
-        <th>Client</th>
-        <th>Email du Client</th>
-        <th>N° de téléphone</th>
-        <th>RNE</th>
-        <th>Date de création</th>
-        <th>Nombre d'opérations</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td>{{ $facture->client }}</td>
-        <td>{{ $facture->client_email }}</td>
-        <td>{{ $phone_number }}</td>
-        <td>{{ $RNE }}</td>
-        <td>{{ $facture->created_at->format('d/m/Y H:i:s') }}</td>
-        <td>{{ $facture->nombre_operations }}</td>
-    </tr>
-    </tbody>
-</table>
 
 <table style="margin-left: 20px;">
     <thead>
     <tr>
-        <th>Nature</th>
-        <th>Quantité</th>
-        <th>Montant HT</th>
-        <th>Taux TVA</th>
-        <th>Montant TTC</th>
+        <th><strong>Nature</strong></th>
+        <th><strong>Quantité</strong></th>
+        <th><strong>Montant HT</strong></th>
+        <th><strong>Montant TTC</strong></th>
     </tr>
     </thead>
     <tbody>
@@ -120,7 +129,6 @@
             <td>{{ $operation->nature }}</td>
             <td>{{ $operation->quantité }}</td>
             <td>{{ $operation->montant_ht }}</td>
-            <td>{{ $operation->taux_tva }}%</td>
             <td>{{ $operation->montant_ttc }}</td>
         </tr>
     @endforeach
@@ -128,131 +136,35 @@
 </table>
 
 <div class="totals">
-    <p style="margin-left: 500px;">Total Montant HT: {{ $facture->total_montant_ht }}</p>
-    <p style="margin-left: 500px;">Total Montant TTC: {{ $facture->total_montant_ttc }}</p>
-    <p style="margin-left: 50px;">Arrêter Le Présent Facture A La Somme De:
-        {{ $facture->total_montant_letters }}</p>
+
+    <table style="width: 220px; margin-left: 400px;">
+        <tr>
+            <th><strong>Total Montant HT:</strong></th>
+            <td>{{ $facture->total_montant_ht }}</td>
+        </tr>
+        <tr>
+            <th><strong>Taux TVA:</strong></th>
+            <td>{{ $operation->taux_tva }}%</td>
+        </tr>
+        <tr>
+            <th><strong>Timbre:</strong></th>
+            <td>1.00</td>
+        </tr>
+        <tr>
+            <th><strong>Total Montant TTC:</strong></th>
+            <td>{{ $facture->total_montant_ttc }}</td>
+        </tr>
+    </table>
+
+
+<div style="margin-left: 50px;">
+    <p ><strong>Arrêter La Présente Facture A La Somme De:</strong></p>
+                      <p>  {{ $facture->total_montant_letters }}</p></div>
 </div>
 </body>
 </html>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Facture</title>
-    <style>
-        /* Define your CSS styles here */
-        body {
-            font-family: sans-serif;
-            margin: 0;
-            padding: 0;
-        }
 
-        .container {
-            margin: 0 auto;
-            max-width: 600px;
-        }
-
-        .logo {
-            max-width: 200px;
-            height: auto;
-        }
-
-        .facture-header {
-            background-color: #eee;
-            padding: 20px;
-        }
-
-        .facture-header h1 {
-            margin: 0;
-        }
-
-        .facture-header p {
-            margin: 0;
-        }
-
-        .facture-body {
-            padding: 20px;
-        }
-
-        .facture-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        .facture-table th {
-            background-color: #eee;
-            text-align: left;
-            padding: 10px;
-        }
-
-        .facture-table td {
-            border: 1px solid #ddd;
-            text-align: left;
-            padding: 10px;
-        }
-
-        .facture-total {
-            text-align: right;
-            margin-top: 20px;
-            font-weight: bold;
-        }
-
-        .facture-total p {
-            margin: 0;
-        }
-
-
-
-
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="facture-header">
-        <img class="logo" src="{{ $logo }}" alt="Logo">
-        <h1>Facture n° {{ $facture->id }}</h1>
-        <p>Client : {{ $facture->client }}</p>
-        <p>Email : {{ $facture->client_email }}</p>
-    </div>
-
-    <div class="facture-body">
-        <table class="facture-table">
-            <thead>
-            <tr>
-                <th>Nature</th>
-                <th>Quantité</th>
-                <th>Montant HT</th>
-                <th>Taux TVA</th>
-                <th>Montant TTC</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach($facture->operationfactures as $operation)
-                <tr>
-                    <td>{{ $operation->nature }}</td>
-                    <td>{{ $operation->quantité }}</td>
-                    <td>{{ $operation->montant_ht }} Dhs</td>
-                    <td>{{ $operation->taux_tva }}%</td>
-                    <td>{{ $operation->montant_ttc }} Dhs</td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-
-        <div class="facture-total">
-            <p>Total HT : {{ $facture->total_montant_ht }} Dhs</p>
-            <p>Total TTC : {{ $facture->total_montant_ttc }} Dhs</p>
-            <p>Total en lettres : {{ $facture->total_montant_letters }} Dhs</p>
-        </div>
-
-
-    </div>
-</div>
-</body>
-</html>
 
 
 

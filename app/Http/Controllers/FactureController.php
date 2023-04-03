@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
 use Illuminate\Http\Response;
 
+
 class FactureController extends Controller
 {
 
@@ -31,13 +32,14 @@ class FactureController extends Controller
             'operationfactures.*.nature' => 'required|string|max:255',
             'operationfactures.*.quantité' => 'required|integer|min:1',
             'operationfactures.*.montant_ht' => 'required|numeric|min:0',
-            'operationfactures.*.taux_tva' => 'required|numeric|min:0',
+            'operationfactures.*.taux_tva' => 'required|numeric|min:0|default:19',
+
         ]);
         $client = Client::where('email', $request->input('client_email'))->first();
 
 
         $facture = Facture::create([
-            'client'=>$client->name,
+            'client' => $client->name,
             'client_email' => $request['client_email'],
             'client_id' => $client->id,
             'nombre_operations' => count($request['operationfactures']),
@@ -78,6 +80,7 @@ class FactureController extends Controller
         return response()->json($facture, 201);
 
     }
+
     function convertMontantToLetters($montant)
     {
         $units = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'];
@@ -85,8 +88,8 @@ class FactureController extends Controller
         $hundreds = ['', 'cent', 'deux-cent', 'trois-cent', 'quatre-cent', 'cinq-cent', 'six-cent', 'sept-cent', 'huit-cent', 'neuf-cent'];
 
         $montant = number_format($montant, 2, '.', '');
-        $intPart = (int) $montant;
-        $decPart = (int) ($montant * 100) % 100;
+        $intPart = (int)$montant;
+        $decPart = (int)($montant * 100) % 100;
 
         $result = '';
         if ($intPart == 0) {
@@ -128,7 +131,7 @@ class FactureController extends Controller
 
     public function generatePdf(Facture $facture, Request $request)
     {
-         $user = $request->user();
+        $user = $request->user();
         if (!$user->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
@@ -136,7 +139,7 @@ class FactureController extends Controller
         $facture->load('operationfactures');
         $client = Client::where('email', $facture->client_email)->first();
         $phone_number = $client->phone_number;
-        $RNE = $client->RNE;
+
 
         // Create an instance of the PDF class
         $pdf = app(PDF::class);
@@ -144,7 +147,7 @@ class FactureController extends Controller
         // Set the path to your logo image file
         $logo = asset('resources/images/logo.svg');
 
-        $html = View::make('pdf.facture', compact('facture', 'phone_number', 'RNE', 'logo','pdf'))->render();
+        $html = View::make('pdf.facture', compact('facture', 'phone_number',  'logo', 'pdf'))->render();
 
         $dompdf = new Dompdf();
 
@@ -166,7 +169,6 @@ class FactureController extends Controller
         return $dompdf->stream("facture-{$facture->id}.pdf");
 
     }
-
 
 
     public function update(Request $request, $id)
@@ -253,6 +255,7 @@ class FactureController extends Controller
 
         return response()->json($facture, 200);
     }
+
     public function showall(Request $request)
     {
         $user = $request->user();
@@ -262,37 +265,23 @@ class FactureController extends Controller
         $facture = Facture::with('operationfactures')->get();
         return response()->json($facture, 200);
     }
-    public function storeAndSendPdf(Request $request)
-    {
-        // Call the existing `store` function to create the facture object
-        $facture = $this->store($request)->getData();
 
-        // Call the existing `generatePdf` function to generate the PDF
-        $pdf = $this->generatePdf(Facture::findOrFail($facture->id), $request);
+   // use Illuminate\Support\Facades\Mail;
 
-        // Retrieve the client by email
-        $client = Client::where('email', $facture->client_email)->first();
+    /*  public function sendPdfToClient(Facture $facture,Request $request)
+      {
+          $client = Client::where('email', $facture->client_email)->first();
+          $pdf = $this->generatePdf($facture,$request);
 
-        // Send the PDF to the client via email
-        Mail::to($client->email)->send(new FacturePdf($pdf));
+          Mail::send([], [], function($message) use ($facture, $client, $pdf) {
+              $message->to($client->email)
+                  ->subject("Invoice #{$facture->id}")
+                  ->attachData($pdf->output(), "facture-{$facture->id}.pdf");
+          });
 
-        // Return a success response
-        return response()->json(['message' => 'Facture created and PDF sent successfully'], 201);
-    }
-
-   /* public function sendPdfToClient(Facture $facture)
-    {
-        // Generate the PDF using the generatePdf method
-        $pdf = $this->generatePdf($facture);
-
-        // Create a response with the PDF contents and appropriate headers
-        $response = new Response($pdf);
-        $response->header('Content-Type', 'application/pdf');
-        $response->header('Content-Disposition', 'inline; filename="facture-'.$facture->id.'.pdf"');
-
-        // Return the response
-        return $response;
     }*/
+
+
 
 
 

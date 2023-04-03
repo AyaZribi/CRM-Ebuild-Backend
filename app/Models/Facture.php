@@ -20,11 +20,12 @@ class Facture extends Model
 
     public function getFormattedIdAttribute()
     {
-        $monthInLetters = date('F', strtotime($this->date_creation));
+        $month = date('M', strtotime($this->date_creation));
         $year = date('Y', strtotime($this->date_creation));
-        $factureNumber = str_pad($this->id, 6, '0', STR_PAD_LEFT);
-        return 'Facture N°FCT ' . $monthInLetters . '/' . $year . ' ' . $factureNumber;
+        $factureNumber = str_pad($this->id, 4, '0', STR_PAD_LEFT);
+        return 'FCT ' . '_'. $month . '_' . $year . ' _ ' . $factureNumber;
     }
+
     protected $appends = ['formatted_id'];
 
     protected static function booted()
