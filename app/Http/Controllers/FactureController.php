@@ -32,7 +32,7 @@ class FactureController extends Controller
             'operationfactures.*.nature' => 'required|string|max:255',
             'operationfactures.*.quantité' => 'required|integer|min:1',
             'operationfactures.*.montant_ht' => 'required|numeric|min:0',
-            'operationfactures.*.taux_tva' => 'required|numeric|min:0|default:19',
+            'operationfactures.*.taux_tva' => 'required|numeric|min:0',
 
         ]);
         $client = Client::where('email', $request->input('client_email'))->first();
