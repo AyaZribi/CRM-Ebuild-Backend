@@ -80,13 +80,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 });
-////////////////////////devis////////////////////////
+////////////////////////tache////////////////////////
 
 Route::post('/tache', [TacheController::class, 'store']);
 Route::post('/taches/{tache}/comments', [TacheController::class, 'createcomment']);
-Route::get('/devis/{id}', [DevisController::class, 'show']);
-Route::get('/devis', [DevisController::class, 'showall']);
-Route::get('devis/{id}/pdf', [DevisController::class, 'generate']);
+
 
 
 
