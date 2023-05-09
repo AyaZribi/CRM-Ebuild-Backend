@@ -73,5 +73,9 @@ class User extends Authenticatable
             'password' => 'required|string|min:8',
         ];
     }
+    public function answers()
+    {
+        return $this->hasMany(Answer::class);
+    }
 
 }

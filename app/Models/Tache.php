@@ -8,8 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class Tache extends Model
 {
     use HasFactory;
-    protected $fillable = ['intitule', 'deadline', 'description', 'file', 'image'];
-
+    protected $fillable = ['intitule', 'deadline', 'description', 'file', 'image', 'project_id', 'projectname'];
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
     public function comments()
     {
         return $this->hasMany(Comment::class);

@@ -15,6 +15,8 @@ return new class extends Migration
     {
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
+            $table->string('client');
+            $table->string('client_email');
             $table->string('projectname');
             $table->string('typeofproject');
             $table->string('frameworks');

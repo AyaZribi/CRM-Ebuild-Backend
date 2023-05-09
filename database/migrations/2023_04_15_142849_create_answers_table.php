@@ -13,16 +13,18 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('taches', function (Blueprint $table) {
+        Schema::create('answers', function (Blueprint $table) {
             $table->id();
-            $table->string('intitule');
-            $table->dateTime('deadline');
+            $table->unsignedBigInteger('ticket_id');
+            $table->unsignedBigInteger('user_id');
+            $table->string('object');
             $table->text('description');
             $table->string('file')->nullable();
             $table->string('image')->nullable();
-            $table->string('projectname');
-            $table->foreignId('project_id')->constrained()->onDelete('cascade');
             $table->timestamps();
+
+            $table->foreign('ticket_id')->references('id')->on('tickets')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
@@ -33,6 +35,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('taches');
+        Schema::dropIfExists('answers');
     }
 };

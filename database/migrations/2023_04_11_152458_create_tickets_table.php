@@ -13,15 +13,12 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('taches', function (Blueprint $table) {
+        Schema::create('tickets', function (Blueprint $table) {
             $table->id();
-            $table->string('intitule');
-            $table->dateTime('deadline');
+            $table->foreignId('project_id')->constrained('projects')->onDelete('cascade');
+            $table->string('object');
             $table->text('description');
-            $table->string('file')->nullable();
-            $table->string('image')->nullable();
-            $table->string('projectname');
-            $table->foreignId('project_id')->constrained()->onDelete('cascade');
+            $table->date('closing_date');
             $table->timestamps();
         });
     }
@@ -33,6 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('taches');
+        Schema::dropIfExists('tickets');
     }
 };

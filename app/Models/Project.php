@@ -19,9 +19,17 @@ class Project extends Model
         'deadline',
         'etat'
     ];
+    public function taches()
+    {
+        return $this->hasMany(Tache::class);
+    }
 
     public function personnel()
     {
         return $this->belongsToMany(Personnel::class);
+    }
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class);
     }
 }

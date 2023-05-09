@@ -78,11 +78,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/projects/{id}', [ProjectController::class, 'update']);
     Route::get('/projects', [ProjectController::class, 'showAll']);
 
+    Route::post('/tickets', [ProjectController::class, 'storeTicket'])->name('tickets.store');
 
+    // Route for showing a ticket
+    Route::get('/tickets/{id}', [ProjectController::class, 'showTicket'])->name('tickets.show');
+
+// Route for answering a ticket
+    Route::post('/tickets/{id}/answer', [ProjectController::class, 'answerTicket'])->name('tickets.answer');
 });
 ////////////////////////tache////////////////////////
 
 Route::post('/tache', [TacheController::class, 'store']);
+Route::put('/taches/{tache}',[TacheController::class, 'update']);
+Route::delete('/taches/{tache}',[TacheController::class, 'destroy']);
+Route::get('/taches/{tache}',[TacheController::class, 'show']);
 Route::post('/taches/{tache}/comments', [TacheController::class, 'createcomment']);
 
 

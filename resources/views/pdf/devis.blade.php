@@ -1,35 +1,57 @@
-
-<!DOCTYPE html>
-<html lang="">
-
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>{{ $devis->id }}.pdf</title>
+    <meta charset="UTF-8">
+    <title>{{ $devis->formatted_id }}</title>
     <style>
-        /* Add your CSS styles here */
+        /* Add any custom CSS styles for the PDF here */
         body {
             font-family: Arial, sans-serif;
             font-size: 12px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
+        .facture-header {
+            background-color: #eee;
+            padding: 20px;
         }
-        th, td {
-            border: 1px solid #000;
-            padding: 5px;
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        th {
-            background-color: #FF0000;
+        .header img {
+            width: 100px;
+            height: 100px;
         }
-        .title {
-            font-size: 18px;
-            font-weight: bold;
+        .header h1 {
+            font-size: 15px;
             text-align: center;
             margin-bottom: 20px;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table th, table td {
+            border: 1px solid black;
+            padding: 5px;
+        }
+        table th {
+            background-color: #eee;
+            font-weight: bold;
+        }
 
+        .totals {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .totals p {
+            margin: 0;
+            margin-left: 20px;
+            font-size: 14px;
+        }
         .vertical-text {
             position: absolute;
             left: 0;
@@ -41,49 +63,52 @@
             align-items: center;
             margin-left: -30px;
             height: 100%;
-            color: #000080;
-            font-size: 20px;
-            width: 1000px; /* Adjust the width to fit your text */
+            color: #FF0000;
+            font-size: 23px;
+            width: 1000px;
+            font-family: Bold/* Adjust the width to fit your text */
         }
+        .company-info {
+            float: left;
+            width: 50%;
+        }
+        .client-info {
+            float: right;
+            width: 50%;
+            text-align: right;
+        }
+        .clear {
+            clear: both;
+        }
+
     </style>
 </head>
 <body>
+<div class="vertical-text">DEVIS N°{{ $devis->formatted_id }}</div>
+<div class="header">
+    <div class="facture-header">
+        <div class="company-info">
+            <h2 style="font-size: 30px; font-family: Bold ; color: #FF0000;">EBUILD</h2>
+            <p style="font-size: 17px; font-family: Bold; display: inline-block;">De:EBUILD</p>
+            <p>SARL immatriculée au registre national des entreprises</p>
+            <p>sous l’identifiant unique 1751386/T.</p>
+            <p>Relevé d'identité bancaire (RIB): 00120 00770036879 </p>
+            <p><strong>N° de téléphone:</strong>98157896</p>
+        </div>
+        <div class="client-info" >
+            <h1 style="text-align: right;"><strong>DEVIS N° </strong><small>{{ $devis->formatted_id }}</small></h1>
+            <h1 style="margin-bottom: 22px;margin-left: 200px;"> <strong>Date:  </strong><small>{{ $devis->created_at->format('d/m/Y ') }}</small></h1>
+            <p style="font-size: 17px; font-family: Bold; display: inline-block;" >À: {{ $devis->client }}</p>
+            <p><strong>Email:</strong> {{ $devis->client_email }}</p>
+            <p><strong>N° de téléphone:</strong> {{ $phone_number }}</p>
 
-<!-- Add company info here -->
-<div style=" margin-bottom: 5px;">
-    <h2 style="font-size: 30px; font-family: Bold ; color: #000080;">E BUILD</h2>
-    <p>SARL immatriculée au registre national des entreprises</p>
-    <p>sous l’identifiant unique 1751386/T.</p>
-    <p>Relevé d'identité bancaire (RIB): 00120 00770036879 </p>
-    <p>N° de téléphone:98157896</p>
+        </div>
+        <div class="clear"></div>
+    </div>
 </div>
-<h1 class="title"> {{ $devis->formatted_id }}</h1>
-
-<div class="vertical-text">{{ $devis->formatted_id }}</div>
 
 
-<table style="margin-left: 20px;">
-    <thead>
-    <tr>
-        <th>Client</th>
-        <th>Email du Client</th>
-        <th>N° de téléphone</th>
-        <th>RNE</th>
-        <th>Date de création</th>
-        <th>Nombre d'opérations</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <td>{{ $devis->client }}</td>
-        <td>{{ $devis->client_email }}</td>
-        <td>{{ $phone_number }}</td>
-        <td>{{ $RNE }}</td>
-        <td>{{ $devis->created_at->format('d/m/Y H:i:s') }}</td>
-        <td>{{ $devis->operations->count() }}</td>
-    </tr>
-    </tbody>
-</table>
+
 
 <table style="margin-left: 20px;">
     <thead>
