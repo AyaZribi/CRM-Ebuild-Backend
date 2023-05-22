@@ -243,7 +243,41 @@ class ProjectController extends Controller
         return response()->json(['ticket' => $ticket]);
 
     }
+    public function showClientTickets()
+    {
+        $user = auth()->user();
 
+        // Retrieve the tickets associated with the client's projects
+        $tickets = Ticket::whereHas('project', function ($query) use ($user) {
+            $query->where('client_email', $user->email);
+        })->get();
+
+        return response()->json(['tickets' => $tickets]);
+    }
+
+    public function viewAssignedTickets()
+    {
+        $user = auth()->user();
+
+        // Retrieve all tickets assigned to the personnel
+        $assignedTickets = Ticket::whereHas('project.personnel', function ($query) use ($user) {
+            $query->where('users.id', $user->id);
+        })->get();
+
+        return response()->json(['tickets' => $assignedTickets]);
+    }
+    public function getAllTickets()
+    {
+        // Check if user is an admin
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Retrieve all tickets
+        $tickets = Ticket::all();
+
+        return response()->json(['tickets' => $tickets]);
+    }
     public function answerTicket(Request $request, $id)
     {
         $ticket = Ticket::findOrFail($id);

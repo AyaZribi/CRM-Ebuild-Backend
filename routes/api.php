@@ -82,6 +82,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Route for showing a ticket
     Route::get('/tickets/{id}', [ProjectController::class, 'showTicket'])->name('tickets.show');
+    Route::get('/ticket/client', [ProjectController::class, 'showClientTickets']);
+    Route::get('/ticket/personnel', [ProjectController::class, 'viewAssignedTickets']);
+    Route::get('/alltickets', [ProjectController::class, 'getAllTickets']);
+
+
+
+
 
 // Route for answering a ticket
     Route::post('/tickets/{id}/answer', [ProjectController::class, 'answerTicket'])->name('tickets.answer');
