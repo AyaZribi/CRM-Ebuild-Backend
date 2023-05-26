@@ -28,7 +28,8 @@ class AuthController extends Controller
 
             return response()->json([
                 'token' => $token,
-                'role' => $user->role
+                'role' => $user->role,
+                'user' => $user
             ], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -243,5 +244,10 @@ class AuthController extends Controller
 
         return response()->json(['success' => true]);
     }
+       public function GetInfo(Request $request)
+        {
+            $user = Auth::user();
+            return response()->json(['user' => $user]);
+        }
 
 }

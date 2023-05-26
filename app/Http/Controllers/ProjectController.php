@@ -23,7 +23,7 @@ class ProjectController extends Controller
      if (!$user->hasRole('admin')) {
          abort(403, 'Unauthorized action.');
      }
-    // Validate the incoming request
+     //Validate the incoming request
     $request->validate([
         'client_email' => 'required|string|email|max:255',
         'projectname' => 'required|string|unique:projects',
@@ -233,9 +233,9 @@ class ProjectController extends Controller
     {
         $ticket = Ticket::findOrFail($id);
         // Check if user is admin or personnel
-        if (auth()->user()->role !== 'admin' && !$ticket->project->personnel->contains(auth()->user())) {
-            abort(403, 'Unauthorized action.');
-        }
+     //   if (auth()->user()->role !== 'admin' && !$ticket->project->personnel->contains(auth()->user())) {
+     //       abort(403, 'Unauthorized action.');
+      //  }
 
         // Load ticket with project and user relationship
         $ticket->load('project', 'user');
@@ -278,13 +278,44 @@ class ProjectController extends Controller
 
         return response()->json(['tickets' => $tickets]);
     }
+    public function answersByTicket(Request $request,$id)
+    {
+            $answers = Answer::whereHas('ticket', function ($query) use ($id) {
+                $query->where('ticket_id', $id);
+            })->with('user')->get();
+
+            $response = [
+                'answers' => []
+            ];
+
+            foreach ($answers as $answer) {
+                $username = $answer->user->name;
+
+                $response['answers'][] = [
+                    'id' => $answer->id,
+                    'ticket_id' => $answer->ticket_id,
+                    'user_id' => $answer->user_id,
+                    'username' => $username,
+                    'object' => $answer->object,
+                    'description' => $answer->description,
+                    'file' => $answer->file,
+                    'image' => $answer->image,
+                    'created_at' => $answer->created_at,
+                    'updated_at' => $answer->updated_at,
+                ];
+            }
+
+            return response()->json($response);
+
+    }
     public function answerTicket(Request $request, $id)
     {
+        //error_log("tes");
         $ticket = Ticket::findOrFail($id);
         // Check if user is admin or personnel
-        if (auth()->user()->role !== 'admin' && !$ticket->project->personnel->contains(auth()->user())) {
-            abort(403, 'Unauthorized action.');
-        }
+       // if (auth()->user()->role !== 'admin' && !$ticket->project->personnel->contains(auth()->user())) {
+           // abort(403, 'Unauthorized action.');
+       // }
 
         // Validate the incoming request for the answer
         $request->validate([
@@ -293,14 +324,12 @@ class ProjectController extends Controller
             'file' => 'nullable|file',
             'image' => 'nullable|image',
         ]);
-
         // Create the answer
         $answer = new Answer();
         $answer->ticket_id = $ticket->id;
         $answer->user_id = auth()->user()->id;
         $answer->object = $request->input('object');
         $answer->description = $request->input('description');
-
         // Upload file if provided
         if ($request->hasFile('file')) {
             $file = $request->file('file');
@@ -308,7 +337,6 @@ class ProjectController extends Controller
             $file->move(public_path('files'), $fileName);
             $answer->file = $fileName;
         }
-
         // Upload image if provided
         if ($request->hasFile('image')) {
             $image = $request->file('image');
@@ -316,10 +344,9 @@ class ProjectController extends Controller
             $image->move(public_path('images'), $imageName);
             $answer->image = $imageName;
         }
-
         $answer->save();
-
-        return redirect()->back()->with('success', 'Answer added successfully.');
+        //return redirect()->back()->with('success', 'Answer added successfully.');
+        return response()->json(['message' => 'Comment created successfully'], 200);
     }
 
 

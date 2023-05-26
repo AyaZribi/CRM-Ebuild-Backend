@@ -92,15 +92,23 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 // Route for answering a ticket
     Route::post('/tickets/{id}/answer', [ProjectController::class, 'answerTicket'])->name('tickets.answer');
+
+
+
+// Route for get answering by ticket
+    Route::get('/tickets/{id}/answers', [ProjectController::class, 'answersByTicket'])->name('tickets.answer');
 });
-////////////////////////tache////////////////////////
+
+////////////////////////devis////////////////////////
 
 Route::post('/tache', [TacheController::class, 'store']);
 Route::put('/taches/{tache}',[TacheController::class, 'update']);
 Route::delete('/taches/{tache}',[TacheController::class, 'destroy']);
 Route::get('/taches/{tache}',[TacheController::class, 'show']);
 Route::post('/taches/{tache}/comments', [TacheController::class, 'createcomment']);
-
+Route::get('/devis/{id}', [DevisController::class, 'show']);
+Route::get('/devis', [DevisController::class, 'showall']);
+Route::get('devis/{id}/pdf', [DevisController::class, 'generate']);
 
 
 
