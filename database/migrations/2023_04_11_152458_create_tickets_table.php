@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('object');
             $table->text('description');
             $table->date('closing_date');
+            $table->enum('status', ['pending', 'in progress', 'fixed'])->default('pending');
+            $table->enum('priority', ['low', 'high', 'urgent'])->default('low');
             $table->timestamps();
         });
     }

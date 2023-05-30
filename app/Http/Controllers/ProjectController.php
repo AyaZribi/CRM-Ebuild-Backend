@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Mail\TicketCreated;
 use App\Models\Answer;
 use App\Models\Client;
+use App\Models\MediaFile;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ProjectCreated;
 use App\Models\Personnel;
@@ -150,134 +152,185 @@ class ProjectController extends Controller
         return response()->json(['project' => $project], 200);
     }
 
-
-    public function showAll(Request $request)
+    public function getAllProjects(Request $request)
     {
         $user = $request->user();
-        if (!$user->hasRole('admin')) {
+
+        if ($user->hasRole('admin')) {
+            // If user is an admin, return all projects with personnel
+            $projects = Project::with('personnel')->get();
+        } elseif ($user->hasRole('client')) {
+            // If user is a client, return projects associated with the client's email
+            $projects = Project::where('client_email', $user->email)->get();
+        } elseif ($user->hasRole('personnel')) {
+            // If user is personnel, return projects assigned to the personnel
+            $projects = Project::whereHas('personnel', function ($query) use ($user) {
+                $query->where('email', $user->email);
+            })->get();
+        } else {
             abort(403, 'Unauthorized action.');
         }
-        $projects = Project::with('personnel')->get();
 
         return response()->json(['projects' => $projects], 200);
     }
 
-    //GET:/api/client/projects
-    public function getClientProjects(Request $request)
+    public function storeTicketsss(Request $request)
     {
-        $client = $request->user(); // Assuming the authenticated user is the client
-        $projects = Project::where('client_email', $client->email)->get();
-
-        return response()->json(['projects' => $projects], 200);
-    }
-    //GET:
-    public function viewAssignedProjects(Request $request)
-    {
-        $user = $request->user();
-        if (!$user->hasRole('personnel')) {
-            abort(403, 'Unauthorized action.'); // Make sure only personnel can access this function
-        }
-
-        // Get the personnel's email from the authenticated user
-        $personnelEmail = $user->email;
-
-        // Get the projects assigned to the personnel
-        $projects = Project::whereHas('personnel', function ($query) use ($personnelEmail) {
-            $query->where('email', $personnelEmail);
-        })->get();
-
-        return response()->json(['projects' => $projects], 200);
-    }
-    public function storeTicket(Request $request)
-    {
-        // Validate the incoming request for the ticket
         $request->validate([
             'project_id' => 'required|integer|exists:projects,id',
             'object' => 'required|string',
             'description' => 'required|string',
             'closing_date' => 'required|date',
+            'status' => 'required|in:pending,inprogress,fixed',
+            'priority' => 'required|in:low,high,urgent',
+            'attachments' => 'array',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
         ]);
 
         $project = Project::findOrFail($request->input('project_id'));
         $user = $request->user();
 
-        // Check if user is the client of the project
         if ($user->email !== $project->client_email) {
             abort(403, 'Unauthorized action.');
         }
 
-        // Create the ticket
-        $ticket = new Ticket();
-        $ticket->project_id = $project->id;
-        $ticket->object = $request->input('object');
-        $ticket->description = $request->input('description');
-        $ticket->closing_date = $request->input('closing_date');
-        $ticket->save();
+        $ticket = new Ticket([
+            'object' => $request->input('object'),
+            'description' => $request->input('description'),
+            'closing_date' => $request->input('closing_date'),
+            'status' => $request->input('status'),
+            'priority' => $request->input('priority'),
+        ]);
 
-        // Get admin and assigned personnel emails
-        $adminEmail = User::where(function ($query) {
-            $query->where('role', 'admin');
-        })->pluck('email')->toArray();
+        $project->tickets()->save($ticket);
+        try {
+            // Code for storing media files
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $attachment) {
+                    $media = new MediaFile();
+                    $media->file_name = $attachment->getClientOriginalName();
+                    $media->file_path = $attachment->store('attachments');
 
+                    // Log the file path to check if it's being saved correctly
+                   // Log::info('File path: ' . $media->file_path);
+
+                    $ticket->media()->save($media);
+                }
+            }
+        } catch (\Exception $e) {
+            // Log the file path to check if it's being saved correctly
+            Log::info('File path: ' . $media->file_path);
+            // Log or output the exception
+            dd($e->getMessage());
+        }
+
+
+
+
+        $adminEmail = User::where('role', 'admin')->pluck('email')->toArray();
         $personnelEmails = $project->personnel->pluck('email')->toArray();
-
         $emails = array_merge($adminEmail, $personnelEmails);
 
-        // Send email to admin and assigned personnel
         Mail::to($emails)->send(new TicketCreated($ticket, $project));
 
         return response()->json(['message' => 'Ticket created successfully'], 201);
     }
 
+
     public function showTicket($id)
     {
-        $ticket = Ticket::findOrFail($id);
-        // Check if user is admin or personnel
-     //   if (auth()->user()->role !== 'admin' && !$ticket->project->personnel->contains(auth()->user())) {
-     //       abort(403, 'Unauthorized action.');
-      //  }
-
-        // Load ticket with project and user relationship
-        $ticket->load('project', 'user');
-
-        return response()->json(['ticket' => $ticket]);
-
-    }
-    public function showClientTickets()
-    {
         $user = auth()->user();
 
-        // Retrieve the tickets associated with the client's projects
-        $tickets = Ticket::whereHas('project', function ($query) use ($user) {
-            $query->where('client_email', $user->email);
-        })->get();
-
-        return response()->json(['tickets' => $tickets]);
-    }
-
-    public function viewAssignedTickets()
-    {
-        $user = auth()->user();
-
-        // Retrieve all tickets assigned to the personnel
-        $assignedTickets = Ticket::whereHas('project.personnel', function ($query) use ($user) {
-            $query->where('users.id', $user->id);
-        })->get();
-
-        return response()->json(['tickets' => $assignedTickets]);
-    }
-    public function getAllTickets()
-    {
         // Check if user is an admin
-        if (auth()->user()->role !== 'admin') {
+        if ($user->role !== 'admin') {
             abort(403, 'Unauthorized action.');
         }
 
-        // Retrieve all tickets
-        $tickets = Ticket::all();
+        // Retrieve the ticket with attachments
+        $ticket = Ticket::with('media')->findOrFail($id);
 
-        return response()->json(['tickets' => $tickets]);
+        return response()->json(['ticket' => $ticket]);
     }
+
+    public function getAllTickets(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->hasRole('admin')) {
+            // If user is an admin, return all tickets with attachments
+            $tickets = Ticket::with('media')->get();
+        } elseif ($user->hasRole('client')) {
+            // If user is a client, return tickets associated with the client's projects with attachments
+            $tickets = Ticket::whereHas('project', function ($query) use ($user) {
+                $query->where('client_email', $user->email);
+            })->with('media')->get();
+        } elseif ($user->hasRole('personnel')) {
+            // If user is personnel, return tickets assigned to the personnel with attachments
+            $tickets = Ticket::whereHas('project.personnel', function ($query) use ($user) {
+                $query->where('users.id', $user->id);
+            })->with('media')->get();
+        } else {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return response()->json(['tickets' => $tickets], 200);
+    }
+    public function updateTicket(Request $request, $id)
+    {
+        $request->validate([
+            'object' => 'required|string',
+            'description' => 'required|string',
+            'closing_date' => 'required|date',
+            'status' => 'required|in:pending,inprogress,fixed',
+            'priority' => 'required|in:low,high,urgent',
+            'attachments' => 'array',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
+        ]);
+
+        $ticket = Ticket::findOrFail($id);
+        $project = $ticket->project;
+        $user = $request->user();
+
+        if ($user->email !== $project->client_email) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $ticket->object = $request->input('object');
+        $ticket->description = $request->input('description');
+        $ticket->closing_date = $request->input('closing_date');
+        $ticket->status = $request->input('status');
+        $ticket->priority = $request->input('priority');
+        $ticket->save();
+
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $attachment) {
+                $ticket->addMedia($attachment)->toMediaCollection('attachments');
+            }
+        }
+
+
+        return response()->json(['message' => 'Ticket updated successfully'], 200);
+    }
+    public function deleteTicket(Request $request, $id)
+    {
+        $ticket = Ticket::findOrFail($id);
+        $user = $request->user();
+
+        if ($user->email !== $ticket->project->client_email) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Delete the ticket's media (attachments) from the storage
+        $ticket->clearMediaCollection('attachments');
+
+        // Delete the ticket
+        $ticket->delete();
+
+        return response()->json(['message' => 'Ticket deleted successfully'], 200);
+    }
+
+
+
     public function answersByTicket(Request $request,$id)
     {
             $answers = Answer::whereHas('ticket', function ($query) use ($id) {

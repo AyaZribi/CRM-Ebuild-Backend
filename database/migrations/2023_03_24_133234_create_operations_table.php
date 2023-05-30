@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('nature');
             $table->string('quantité');
             $table->decimal('montant_ht', 10, 2);
-            $table->decimal('taux_tva', 5, 2);
+            $table->decimal('taux_tva', 5, 2)->default(19);
             $table->decimal('montant_ttc', 10, 2);
             $table->timestamps();
 

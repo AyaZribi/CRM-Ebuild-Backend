@@ -32,11 +32,13 @@ class FactureController extends Controller
             'operationfactures.*.nature' => 'required|string|max:255',
             'operationfactures.*.quantité' => 'required|integer|min:1',
             'operationfactures.*.montant_ht' => 'required|numeric|min:0',
-            'operationfactures.*.taux_tva' => 'required|numeric|min:0',
+            'operationfactures.*.taux_tva' => 'numeric|min:0',
+            'calculate_ttc' => 'boolean',
+            'note' => 'nullable|string|max:255',
 
         ]);
         $client = Client::where('email', $request->input('client_email'))->first();
-
+        $calculateTtc = $request->input('calculate_ttc', true);
 
         $facture = Facture::create([
             'client' => $client->name,
@@ -44,42 +46,51 @@ class FactureController extends Controller
             'client_id' => $client->id,
             'nombre_operations' => count($request['operationfactures']),
             'date_creation' => now(),
+            'note' => $request->input('note'),
+
         ]);
 
         $totalMontantHt = 0;
         $totalMontantTtc = 0;
 
-
         foreach ($request->input('operationfactures') as $operationData) {
+            $tauxTva = isset($operationData['taux_tva']) ? $operationData['taux_tva'] : 19; // Use 19 as default if taux_tva is not provided
+
             $operation = new Operationfacture([
                 'nature' => $operationData['nature'],
                 'quantité' => $operationData['quantité'],
                 'montant_ht' => $operationData['montant_ht'],
-                'taux_tva' => $operationData['taux_tva'],
-                'montant_ttc' => $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100),
+                'taux_tva' => $tauxTva,
             ]);
+
+            if (!$calculateTtc) {
+                $operation->montant_ttc = $operationData['montant_ht'] * (1 + $tauxTva / 100);
+            }
 
             $facture->operationfactures()->save($operation);
 
             $totalMontantHt += $operationData['montant_ht'] * $operationData['quantité'];
-            $totalMontantTtc += $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100) * $operationData['quantité'];
 
+            if (!$calculateTtc) {
+                // Only add to totalMontantTtc if calculateTtc is false
+                $totalMontantTtc += $operationData['montant_ht'] * (1 + ($operationData['taux_tva'] ?? 19) / 100) * $operationData['quantité'];
+            }
         }
 
         $totalMontantTtc += 1.00; // Add 1% timbre
 
-        // Convert the total montant to letters
-        $totalMontantLetters = $this->convertMontantToLetters($totalMontantTtc);
+        // Convert the appropriate total montant to letters based on calculateTtc value
+        $totalMontantLetters = $calculateTtc ? $this->convertMontantToLetters($totalMontantHt) : $this->convertMontantToLetters($totalMontantTtc);
 
         $facture->update([
             'total_montant_ht' => $totalMontantHt,
-            'total_montant_ttc' => $totalMontantTtc,
+            'total_montant_ttc' => $calculateTtc ? null : $totalMontantTtc,
             'total_montant_letters' => $totalMontantLetters,
         ]);
 
         return response()->json($facture, 201);
-
     }
+
 
     function convertMontantToLetters($montant)
     {
@@ -141,13 +152,16 @@ class FactureController extends Controller
         $phone_number = $client->phone_number;
 
 
+
         // Create an instance of the PDF class
         $pdf = app(PDF::class);
 
         // Set the path to your logo image file
         $logo = asset('resources/images/logo.svg');
+        $calculateTtc = $facture->calculateTtc; // Invert the calculateTtc value
 
-        $html = View::make('pdf.facture', compact('facture', 'phone_number',  'logo', 'pdf'))->render();
+
+        $html = View::make('pdf.facture', compact('facture', 'phone_number','calculateTtc',  'logo', 'pdf'))->render();
 
         $dompdf = new Dompdf();
 

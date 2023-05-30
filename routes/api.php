@@ -76,30 +76,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/projects/{id}', [ProjectController::class, 'show']);
     Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);
     Route::put('/projects/{id}', [ProjectController::class, 'update']);
-    Route::get('/projects', [ProjectController::class, 'showAll']);
+    Route::get('/projects', [ProjectController::class, 'getAllProjects']);
 
-    Route::post('/tickets', [ProjectController::class, 'storeTicket'])->name('tickets.store');
+    ////////////////////////tickets////////////////////////
 
-    // Route for showing a ticket
+    Route::post('ticket/add', [ProjectController::class, 'storeTicketsss'])->name('tickets.store');
     Route::get('/tickets/{id}', [ProjectController::class, 'showTicket'])->name('tickets.show');
-    Route::get('/ticket/client', [ProjectController::class, 'showClientTickets']);
-    Route::get('/ticket/personnel', [ProjectController::class, 'viewAssignedTickets']);
     Route::get('/alltickets', [ProjectController::class, 'getAllTickets']);
-
-
-
-
 
 // Route for answering a ticket
     Route::post('/tickets/{id}/answer', [ProjectController::class, 'answerTicket'])->name('tickets.answer');
-
-
-
 // Route for get answering by ticket
     Route::get('/tickets/{id}/answers', [ProjectController::class, 'answersByTicket'])->name('tickets.answer');
 });
 
-////////////////////////devis////////////////////////
+////////////////////////tache////////////////////////
 
 Route::post('/tache', [TacheController::class, 'store']);
 Route::put('/taches/{tache}',[TacheController::class, 'update']);

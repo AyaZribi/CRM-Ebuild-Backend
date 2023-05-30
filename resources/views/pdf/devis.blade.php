@@ -128,6 +128,13 @@
             <td>{{ $operation->montant_ttc }}</td>
         </tr>
     @endforeach
+    @if (!is_null($devis->note))
+
+        <tr>
+        <td colspan=4 >
+            <strong>Note:</strong> {{ $devis->note }}</td>
+    </tr>
+    @endif
     </tbody>
 </table>
 </body>
