@@ -116,7 +116,10 @@
         <th>Nature de l'opération</th>
         <th>Montant HT</th>
         <th>Taux de TVA</th>
-        <th>Montant avec TVA</th>
+        @if (!is_null($devis->operations->first()->montant_ttc))
+
+        <th>Montant TTC</th>
+        @endif
     </tr>
     </thead>
     <tbody>
@@ -125,13 +128,15 @@
             <td>{{ $operation->nature }}</td>
             <td>{{ $operation->montant_ht }}</td>
             <td>{{ $operation->taux_tva }}</td>
+            @if (!is_null($operation->montant_ttc))
             <td>{{ $operation->montant_ttc }}</td>
+            @endif
         </tr>
     @endforeach
     @if (!is_null($devis->note))
 
         <tr>
-        <td colspan=4 >
+        <td colspan="{{ !is_null($devis->operations->first()->montant_ttc) ? 4 : 3}}" >
             <strong>Note:</strong> {{ $devis->note }}</td>
     </tr>
     @endif

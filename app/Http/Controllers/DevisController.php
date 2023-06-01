@@ -81,6 +81,7 @@ class DevisController extends Controller
         if (!$user->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
+
         $request->validate([
             'client_email' => 'required|string|email|max:255',
             'operations' => 'required|array|min:1',
@@ -88,23 +89,26 @@ class DevisController extends Controller
             'operations.*.quantité' => 'required|numeric|min:0',
             'operations.*.montant_ht' => 'required|numeric|min:0',
             'operations.*.taux_tva' => 'numeric|min:0',
+            'calculate_ttc' => 'boolean',
             'note' => 'nullable|string|max:255',
         ]);
 
         $client = Client::where('email', $request->input('client_email'))->first();
-        $switch = $request->input('switch', false);
-        $devis = Devis::findOrFail($id);
+        $calculateTtc = $request->input('calculate_ttc', true);
 
-        $devis->update([
-            'client'=>$client->name,
+        $devisData = [
+            'client' => $client->name,
             'client_email' => $request['client_email'],
             'client_id' => $client->id,
             'nombre_operations' => count($request['operations']),
-            'switch' => $switch,
-            'date_creation' => now(),
             'note' => $request->input('note'),
-        ]);
+        ];
+        $devis = Devis::findOrFail($id);
 
+
+        $devis->update($devisData);
+
+        // Delete existing operations
         $devis->operations()->delete();
 
         foreach ($request->input('operations') as $operationData) {
@@ -115,17 +119,21 @@ class DevisController extends Controller
                 'quantité' => $operationData['quantité'],
                 'montant_ht' => $operationData['montant_ht'],
                 'taux_tva' => $tauxTva,
-               // 'montant_ttc' => $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100),
-               // 'montant_ttc' => $operationData['montant_ht'] * (1 + $tauxTva / 100),
+                'devis_id' => $devis->id, // Assign the devis_id to the operation
             ]);
-            $operation->montant_ttc = $operationData['montant_ht'] * (1 + $tauxTva / 100);
 
+            if (!$calculateTtc) {
+                $operation->montant_ttc = $operationData['montant_ht'] * (1 + $tauxTva / 100);
+            }
 
-            $devis->operations()->save($operation);
+            $operation->save(); // Save the operation
+
+            $devis->operations()->save($operation); // Associate the operation with the devis
         }
 
         return response()->json($devis, 200);
     }
+
 
     public function destroy(Request $request, $id)
     {
@@ -151,13 +159,19 @@ class DevisController extends Controller
     }
     public function showall(Request $request)
     {
+
+
         $user = $request->user();
-        if (!$user->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
+
+        if ($user->hasRole('admin')) {
+            $devis = Devis::with('operations')->get();
+        } else {
+            $devis = Devis::where('client_email', $user->email)->with('operations')->get();
         }
-        $devis = Devis::with('operations')->get();
+
         return response()->json($devis, 200);
     }
+
 
 
 }
