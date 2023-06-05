@@ -80,7 +80,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     ////////////////////////tickets////////////////////////
 
-    Route::post('ticket/add', [ProjectController::class, 'storeTicketsss'])->name('tickets.store');
+    Route::post('ticket/add', [ProjectController::class, 'storeTicket'])->name('tickets.store');
     Route::get('/tickets/{id}', [ProjectController::class, 'showTicket'])->name('tickets.show');
     Route::get('/alltickets', [ProjectController::class, 'getAllTickets']);
 

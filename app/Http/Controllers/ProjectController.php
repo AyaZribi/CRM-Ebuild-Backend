@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\TicketCreated;
 use App\Models\Answer;
 use App\Models\Client;
-use App\Models\MediaFile;
+use App\Models\File;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -174,7 +174,7 @@ class ProjectController extends Controller
         return response()->json(['projects' => $projects], 200);
     }
 
-    public function storeTicketsss(Request $request)
+    public function storeTicket(Request $request)
     {
         $request->validate([
             'project_id' => 'required|integer|exists:projects,id',
@@ -183,8 +183,8 @@ class ProjectController extends Controller
             'closing_date' => 'required|date',
             'status' => 'required|in:pending,inprogress,fixed',
             'priority' => 'required|in:low,high,urgent',
-            'attachments' => 'array',
-            'attachments.*' => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
+            'file' => 'array',
+            'file.*' => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
         ]);
 
         $project = Project::findOrFail($request->input('project_id'));
@@ -203,25 +203,14 @@ class ProjectController extends Controller
         ]);
 
         $project->tickets()->save($ticket);
-        try {
-            // Code for storing media files
-            if ($request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $attachment) {
-                    $media = new MediaFile();
-                    $media->file_name = $attachment->getClientOriginalName();
-                    $media->file_path = $attachment->store('attachments');
+        if ($request->hasFile('file')) {
+            foreach ($request->file('file') as $file) {
+                $media = new File();
+                $media->file_name = $file->getClientOriginalName();
+                $media->file_path = $file->store('files');
 
-                    // Log the file path to check if it's being saved correctly
-                   // Log::info('File path: ' . $media->file_path);
-
-                    $ticket->media()->save($media);
-                }
+                $ticket->files()->save($media);
             }
-        } catch (\Exception $e) {
-            // Log the file path to check if it's being saved correctly
-            Log::info('File path: ' . $media->file_path);
-            // Log or output the exception
-            dd($e->getMessage());
         }
 
 

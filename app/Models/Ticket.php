@@ -35,8 +35,8 @@ class Ticket extends Model implements HasMedia
     {
         return $this->belongsTo(User::class);
     }
-    public function mediaFiles()
+    public function files()
     {
-        return $this->hasMany(MediaFile::class);
+        return $this->hasMany(File::class);
     }
 }
