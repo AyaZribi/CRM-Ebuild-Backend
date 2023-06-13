@@ -33,7 +33,7 @@ class NewUserEmail extends Mailable
     public function envelope()
     {
         return new Envelope(
-            subject: 'New User Email',
+            subject: '[EBUILD] New User Email',
         );
     }
     /**

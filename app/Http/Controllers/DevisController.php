@@ -7,6 +7,7 @@ use App\Models\Devis;
 use App\Models\Operation;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class DevisController extends Controller
 {
@@ -40,6 +41,7 @@ class DevisController extends Controller
             'client_email' => $request['client_email'],
             'client_id' => $client->id,
             'nombre_operations' => count($request['operations']),
+            'note' => $request['note'],
             'date_creation' => now(),
         ]);
 
@@ -60,9 +62,9 @@ class DevisController extends Controller
     public function generate($id,Request $request)
     {
         $user = $request->user();
-        if (!$user->hasRole('admin')) {
+      /*  if (!$user->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
-        }
+        }*/
         $devis = Devis::with('operations')->findOrFail($id);
 
         // Retrieve the client by email
@@ -99,6 +101,8 @@ class DevisController extends Controller
             'client'=>$client->name,
             'client_email' => $request['client_email'],
             'client_id' => $client->id,
+            'invoiced'=>$request['invoiced'],
+            'note'=>$request['note'],
             'nombre_operations' => count($request['operations']),
             'date_creation' => now(),
         ]);
@@ -135,21 +139,38 @@ class DevisController extends Controller
     public function show(Request $request, $id)
     {
         $user = $request->user();
-        if (!$user->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
-        }
-        $devis = Devis::with('operations')->findOrFail($id);
+
+        if ($user->hasRole('admin') || $user->hasRole('client')) {
+         $devis = Devis::with('operations')->findOrFail($id);
+        }else {
+              abort(403, 'Unauthorized action.');
+              }
+
 
         return response()->json($devis, 200);
     }
     public function showall(Request $request)
-    {
-        $user = $request->user();
-        if (!$user->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
-        }
-        $devis = Devis::with('operations')->get();
+{
+    if (auth()->check()) {
+
+          $user = $request->user();
+
+         if ($user->hasRole('admin')) {
+                                   // If user is an admin, return all projects with personnel
+                                   $devis = Devis::with('operations')->get();
+                               } elseif ($user->hasRole('client')) {
+                                   // If user is a client, return projects associated with the client's email
+                                   $devis = Devis::where('client_email', $user->email)
+                                   ->with('operations')
+                                   ->get();
+                               } else {
+                                   abort(403, 'Unauthorized action.');
+                               }
+
         return response()->json($devis, 200);
+        } else {
+                abort(401, 'Unauthenticated');
+            }
     }
 
 

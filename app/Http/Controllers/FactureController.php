@@ -8,8 +8,10 @@ use App\Models\Facture;
 use App\Models\User;
 
 use App\Models\Operationfacture;
-use Barryvdh\DomPDF\PDF;
+//use Barryvdh\DomPDF\PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Http\Request;
+
 use Dompdf\Dompdf;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
@@ -129,47 +131,57 @@ class FactureController extends Controller
         return $result;
     }
 
-    public function generatePdf(Facture $facture, Request $request)
-    {
-        $user = $request->user();
-        if (!$user->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
+     public function generatePdf(Facture $facture, Request $request)
+        {
+           $user = $request->user();
+             /*  if (!$user->hasRole('admin')) {
+                   abort(403, 'Unauthorized action.');
+               }*/
+               $facture->load('operationfactures');
+
+                // Retrieve the client by email
+                $client = Client::where('email', $facture->client_email)->first();
+
+                // Retrieve the phone number and RNE from the client object
+                $phone_number = $client->phone_number;
+                $RNE = $client->RNE;
+
+
+               //$facture->load('operationfactures');
+               //$client = Client::where('email', $facture->client_email)->first();
+               $phone_number = $client->phone_number;
+               $calculateTtc = $facture->calculateTtc;
+                $pdf = PDF::loadView('pdf.facture', compact('facture', 'phone_number','calculateTtc'));
+
+                return $pdf->download('facture.pdf');
+              /* // Create an instance of the PDF class
+               $pdf = new Dompdf();
+
+               // Set the path to your logo image file
+              // $logo = asset('resources/images/logo.svg');
+            //   $calculateTtc = $facture->calculateTtc; // Invert the calculateTtc value
+
+               $html = View::make('pdf.facture', compact('facture', 'phone_number','calculateTtc', 'pdf'))->render();
+
+               $contxt = stream_context_create([
+                   'ssl' => [
+                       'verify_peer' => FALSE,
+                       'verify_peer_name' => FALSE,
+                       'allow_self_signed' => TRUE,
+                   ]
+               ]);
+
+               $pdf->getOptions()->setIsHtml5ParserEnabled(true);
+               $pdf->getOptions()->setIsRemoteEnabled(true);
+               $pdf->getOptions()->setHttpContext($contxt);
+
+               $pdf->setPaper('A4', 'portrait');
+               $pdf->loadHtml($html);
+               $pdf->render();
+
+               return $pdf->stream("facture-{$facture->id}.pdf");
+            */
         }
-
-        $facture->load('operationfactures');
-        $client = Client::where('email', $facture->client_email)->first();
-        $phone_number = $client->phone_number;
-
-
-        // Create an instance of the PDF class
-        $pdf = app(PDF::class);
-
-        // Set the path to your logo image file
-        $logo = asset('resources/images/logo.svg');
-
-        $html = View::make('pdf.facture', compact('facture', 'phone_number',  'logo', 'pdf'))->render();
-
-        $dompdf = new Dompdf();
-
-        $dompdf->loadHtml($html);
-        $contxt = stream_context_create([
-            'ssl' => [
-                'verify_peer' => FALSE,
-                'verify_peer_name' => FALSE,
-                'allow_self_signed' => TRUE,
-            ]
-        ]);
-
-        // Set the options on the PDF instance
-        $pdf->setOptions(['isHTML5ParserEnabled' => true, 'isRemoteEnabled' => true]);
-        $pdf->getDomPDF()->setHttpContext($contxt);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        return $dompdf->stream("facture-{$facture->id}.pdf");
-
-    }
-
 
     public function update(Request $request, $id)
     {
@@ -248,9 +260,9 @@ class FactureController extends Controller
     public function show($id, Request $request)
     {
         $user = $request->user();
-        if (!$user->hasRole('admin')) {
+     /*   if (!$user->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
-        }
+        }*/
         $facture = Facture::with('operationfactures')->findOrFail($id);
 
         return response()->json($facture, 200);
@@ -259,17 +271,24 @@ class FactureController extends Controller
     public function showall(Request $request)
     {
         $user = $request->user();
-        if (!$user->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
-        }
-        $facture = Facture::with('operationfactures')->get();
+        if ($user->hasRole('admin')) {
+                           // If user is an admin, return all projects with personnel
+                           $facture = Facture::with('operationfactures')->get();
+                       } elseif ($user->hasRole('client')) {
+                           // If user is a client, return projects associated with the client's email
+                           $facture = Facture::where('client_email', $user->email)->get();
+                       } else {
+                           abort(403, 'Unauthorized action.');
+                       }
+     //   $facture = Facture::with('operationfactures')->get();
         return response()->json($facture, 200);
     }
 
    // use Illuminate\Support\Facades\Mail;
 
-    /*  public function sendPdfToClient(Facture $facture,Request $request)
+      public function sendPdfToClient(Facture $facture,Request $request)
       {
+          $facture->client_email = $request->input('email');
           $client = Client::where('email', $facture->client_email)->first();
           $pdf = $this->generatePdf($facture,$request);
 
@@ -279,7 +298,7 @@ class FactureController extends Controller
                   ->attachData($pdf->output(), "facture-{$facture->id}.pdf");
           });
 
-    }*/
+    }
 
 
 

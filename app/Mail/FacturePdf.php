@@ -31,7 +31,7 @@ $this->pdf = $pdf;
 */
 public function build()
 {
-return $this->subject('Your Facture PDF')->view('emails.facture-pdf')->attachData($this->pdf->getContent(), 'facture.pdf', [
+return $this->subject('[EBUILD] Your Facture PDF')->view('emails.facture-pdf')->attachData($this->pdf->getContent(), 'facture.pdf', [
 'mime' => $this->pdf->headers->get('content-type'),
 ]);
 }

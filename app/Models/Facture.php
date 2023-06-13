@@ -44,4 +44,9 @@ class Facture extends Model
     {
         return $this->hasMany(Operationfacture::class);
     }
+
+    public function note()
+    {
+        return $this->belongsTo(Note::class);
+    }
 }

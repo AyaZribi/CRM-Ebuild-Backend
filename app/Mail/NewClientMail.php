@@ -36,7 +36,7 @@ class NewClientMail extends Mailable
      */
     public function build()
     {
-        return $this->subject('Your new account has been created')
+        return $this->subject('[EBUILD] Your new account has been created')
             ->view('new_client');
     }
 
@@ -50,7 +50,7 @@ class NewClientMail extends Mailable
     public function envelope()
     {
         return new Envelope(
-            subject: 'New Client Mail',
+            subject: '[EBUILD] Welcome To Ebuild CRM',
         );
     }
 

@@ -13,15 +13,16 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('devis', function (Blueprint $table) {
-            $table->id();
+        Schema::table('devis', function (Blueprint $table) {
+        /*    $table->id();
             $table->string('client');
             $table->string('client_email');
             $table->date('date_creation');
-            $table->integer('nombre_operations')->default(0);
-            $table->timestamps();
-        });
-    }
+            $table->integer('nombre_operations')->default(0)
+            $table->timestamps()
+            $table->integer('invoiced')->default(0);*/
+            $table->string('note')->default('');
+        });    }
 
     /**
      * Reverse the migrations.
@@ -30,6 +31,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('devis');
+        //Schema::dropIfExists('devis');
     }
 };

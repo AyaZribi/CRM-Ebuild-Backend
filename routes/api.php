@@ -7,6 +7,7 @@ use App\Http\Controllers\FactureController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\AnswersController;
 use App\Http\Controllers\TacheController;
 use App\Models\Facture;
 use Illuminate\Http\Request;
@@ -30,9 +31,11 @@ Route::post('forgot-password', [App\Http\Controllers\Auth\ForgotPasswordControll
 Route::post('reset-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'reset']);
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout']);
 Route::middleware(['auth:sanctum'])->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('changePassword', [AuthController::class, 'ChangePassword']);
+    Route::get('GetInfo', [AuthController::class, 'GetInfo']);
+
     ////////////////////////personnel////////////////////////
 
     Route::post('/personnel', [AuthController::class, 'store1']);
@@ -59,16 +62,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/facture/{id}', [FactureController::class, 'update']);
     Route::delete('/facture/{id}', [FactureController::class, 'destroy']);
     Route::get('/facture/{id}', [FactureController::class, 'show']);
-    Route::get('/factures', [DevisController::class, 'showall']);
+    Route::get('/factures', [FactureController::class, 'showall']);
     Route::get('/factures/{facture}/pdf', [FactureController::class, 'generatePdf']);
     //Route::get('/factures/{facture}/pdf', [FactureController::class, 'sendPdfToClient']);
     ////////////////////////devis////////////////////////
 
     Route::apiResource('devis', DevisController::class);
+    Route::get('/devis', [DevisController::class, 'showall']);
     Route::put('/devis/{id}', [DevisController::class, 'update']);
     Route::delete('/devis/{id}', [DevisController::class, 'destroy']);
     Route::get('/devis/{id}', [DevisController::class, 'show']);
-    Route::get('/devis', [DevisController::class, 'showall']);
     Route::get('devis/{id}/pdf', [DevisController::class, 'generate']);
      ////////////////////////project////////////////////////
 
@@ -78,13 +81,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/projects/{id}', [ProjectController::class, 'update']);
     Route::get('/projects', [ProjectController::class, 'showAll']);
 
+// Route for showing a ticket
     Route::post('/tickets', [ProjectController::class, 'storeTicket'])->name('tickets.store');
-
-    // Route for showing a ticket
+    Route::delete('/ticket/{id}', [ProjectController::class, 'deleteTicketAndAnswers']);
     Route::get('/tickets/{id}', [ProjectController::class, 'showTicket'])->name('tickets.show');
     Route::get('/ticket/client', [ProjectController::class, 'showClientTickets']);
     Route::get('/ticket/personnel', [ProjectController::class, 'viewAssignedTickets']);
     Route::get('/alltickets', [ProjectController::class, 'getAllTickets']);
+    Route::put('/ticket/{id}', [ProjectController::class, 'updateTicket']);
+    Route::get('/statistics/status', [ProjectController::class, 'getStatusStatistics']);
+    Route::get('/statistics/priority', [ProjectController::class, 'getPriorityStatistics']);
+    Route::get('/statistics/etat', [ProjectController::class, 'getEtatStatistics']);
+
 
 
 
@@ -95,8 +103,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 
+
 // Route for get answering by ticket
     Route::get('/tickets/{id}/answers', [ProjectController::class, 'answersByTicket'])->name('tickets.answer');
+     Route::delete('/answers/{id}', [AnswersController::class, 'destroy']);
+     Route::put('/answers/{id}', [AnswersController::class, 'update']);
 });
 
 ////////////////////////devis////////////////////////
@@ -105,14 +116,18 @@ Route::post('/tache', [TacheController::class, 'store']);
 Route::put('/taches/{tache}',[TacheController::class, 'update']);
 Route::delete('/taches/{tache}',[TacheController::class, 'destroy']);
 Route::get('/taches/{tache}',[TacheController::class, 'show']);
+Route::get('/taches',[TacheController::class, 'showall']);
 Route::post('/taches/{tache}/comments', [TacheController::class, 'createcomment']);
-Route::get('/devis/{id}', [DevisController::class, 'show']);
-Route::get('/devis', [DevisController::class, 'showall']);
+Route::get('/comments/taches/{tache}', [TacheController::class, 'commentsByTache']);
+Route::post('/tache/favori/{tache}',[TacheController::class, 'addFavori']);
+Route::post('/tache/completed/{tache}',[TacheController::class, 'changeCompleted']);
+Route::get('/favori', [TacheController::class, 'getFavori']);
+Route::get('/completed', [TacheController::class, 'getCompleted']);
+Route::get('/statistics/statusTache', [TacheController::class, 'getTacheStatusStatistics']);
+
+//Route::get('/devis/{id}', [DevisController::class, 'show']);
+//Route::get('/devis', [DevisController::class, 'showall']);
 Route::get('devis/{id}/pdf', [DevisController::class, 'generate']);
-
-
-
-
 
 /*
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {

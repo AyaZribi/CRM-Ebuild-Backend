@@ -108,11 +108,9 @@
 </div>
 
 <div class="header" >
-    <img src="{{ asset('resources/images/logo.svg') }}" alt="Logo">
 
 
 </div>
-
 
 <table style="margin-left: 20px;">
     <thead>
@@ -120,7 +118,9 @@
         <th><strong>Nature</strong></th>
         <th><strong>Quantité</strong></th>
         <th><strong>Montant HT</strong></th>
-        <th><strong>Montant TTC</strong></th>
+        @if (!is_null($facture->operationfactures->first()->montant_ttc))
+            <th><strong>Montant TTC</strong></th>
+        @endif
     </tr>
     </thead>
     <tbody>
@@ -129,46 +129,48 @@
             <td>{{ $operation->nature }}</td>
             <td>{{ $operation->quantité }}</td>
             <td>{{ $operation->montant_ht }}</td>
-            <td>{{ $operation->montant_ttc }}</td>
+            @if (!is_null($operation->montant_ttc))
+                <td>{{ $operation->montant_ttc }}</td>
+            @endif
         </tr>
     @endforeach
+    @if (!is_null($facture->note))
+    <tr>
+        <td colspan="{{ !is_null($facture->operationfactures->first()->montant_ttc) ? 4 : 3}}" >
+            <strong>Note:</strong> {{ $facture->note }}</td>
+    </tr>
+    @endif
     </tbody>
 </table>
 
 <div class="totals">
-
     <table style="width: 220px; margin-left: 400px;">
         <tr>
             <th><strong>Total Montant HT:</strong></th>
             <td>{{ $facture->total_montant_ht }}</td>
         </tr>
-        <tr>
-            <th><strong>Taux TVA:</strong></th>
-            <td>{{ $operation->taux_tva }}%</td>
-        </tr>
+        @if (!is_null($facture->operationfactures->first()->montant_ttc))
+            <tr>
+                <th><strong>Taux TVA:</strong></th>
+                <td>{{ $operation->taux_tva }}%</td>
+            </tr>
+        @endif
         <tr>
             <th><strong>Timbre:</strong></th>
             <td>1.00</td>
         </tr>
-        <tr>
-            <th><strong>Total Montant TTC:</strong></th>
-            <td>{{ $facture->total_montant_ttc }}</td>
-        </tr>
+        @if (!is_null($facture->total_montant_ttc))
+            <tr>
+                <th><strong>Total Montant TTC:</strong></th>
+                <td>{{ $facture->total_montant_ttc }}</td>
+            </tr>
+        @endif
     </table>
 
-
-<div style="margin-left: 50px;">
-    <p ><strong>Arrêter La Présente Facture A La Somme De:</strong></p>
-                      <p>  {{ $facture->total_montant_letters }}</p></div>
+    <div style="margin-left: 50px;">
+        <p><strong>Arrêter La Présente Facture A La Somme De:</strong></p>
+        <p>{{ $facture->total_montant_letters }}</p>
+    </div>
 </div>
 </body>
 </html>
-
-
-
-
-
-
-
-
-

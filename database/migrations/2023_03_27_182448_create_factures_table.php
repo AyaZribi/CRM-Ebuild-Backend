@@ -13,8 +13,8 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('factures', function (Blueprint $table) {
-            $table->id();
+        Schema::table('factures', function (Blueprint $table) {
+          /*  $table->id();
             $table->string('client');
             $table->string('client_email');
             $table->date('date_creation');
@@ -22,7 +22,8 @@ return new class extends Migration
             $table->decimal('total_montant_ht', 10, 2)->nullable();
             $table->decimal('total_montant_ttc', 10, 2)->nullable();
             $table->string('total_montant_letters')->nullable();
-            $table->timestamps();
+            $table->timestamps();*/
+            $table->string('note')->default('');
         });
 
     }
@@ -35,6 +36,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('factures');
+       // Schema::dropIfExists('factures');
     }
 };
