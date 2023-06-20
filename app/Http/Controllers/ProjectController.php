@@ -1,15 +1,14 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\DB;
 use App\Mail\TicketCreated;
 use App\Models\Answer;
 use App\Models\Client;
-use App\Models\File;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Models\File;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ProjectCreated;
 use App\Models\Personnel;
@@ -144,182 +143,179 @@ class ProjectController extends Controller
     public function show($id,Request $request)
     {
         $user = $request->user();
-        if (!$user->hasRole('admin')) {
+        /*if (!$user->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
-        }
+        }*/
         $project = Project::with('personnel')->findOrFail($id);
-
+        $project->unsetRelation('personnel');
+         foreach ($project->personnel as $personnelMember) {
+                               $personnelMember->makeHidden('pivot');
+                           }
         return response()->json(['project' => $project], 200);
     }
 
-    public function getAllProjects(Request $request)
+
+    public function showAll(Request $request)
     {
         $user = $request->user();
 
-        if ($user->hasRole('admin')) {
-            // If user is an admin, return all projects with personnel
-            $projects = Project::with('personnel')->get();
-        } elseif ($user->hasRole('client')) {
-            // If user is a client, return projects associated with the client's email
-            $projects = Project::where('client_email', $user->email)->get();
-        } elseif ($user->hasRole('personnel')) {
-            // If user is personnel, return projects assigned to the personnel
-            $projects = Project::whereHas('personnel', function ($query) use ($user) {
-                $query->where('email', $user->email);
-            })->get();
-        } else {
-            abort(403, 'Unauthorized action.');
-        }
-
+               if ($user->hasRole('admin')) {
+                   // If user is an admin, return all projects with personnel
+                   $projects = Project::with('personnel')->get();
+               } elseif ($user->hasRole('client')) {
+                   // If user is a client, return projects associated with the client's email
+                   $projects = Project::where('client_email', $user->email)->get();
+            //        $projects[0]=$user->email;
+               } elseif ($user->hasRole('personnel')) {
+                   // If user is personnel, return projects assigned to the personnel
+                   $projects = Project::whereHas('personnel', function ($query) use ($user) {
+                       $query->where('email', $user->email);
+                   })->get();
+               } else {
+                   abort(403, 'Unauthorized action.');
+               }
         return response()->json(['projects' => $projects], 200);
     }
 
+    //GET:/api/client/projects
+    public function getClientProjects(Request $request)
+    {
+        $client = $request->user(); // Assuming the authenticated user is the client
+        $projects = Project::where('client_email', $client->email)->get();
+
+        return response()->json(['projects' => $projects], 200);
+    }
+    //GET:
+    public function viewAssignedProjects(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->hasRole('personnel')) {
+            abort(403, 'Unauthorized action.'); // Make sure only personnel can access this function
+        }
+
+        // Get the personnel's email from the authenticated user
+        $personnelEmail = $user->email;
+
+        // Get the projects assigned to the personnel
+        $projects = Project::whereHas('personnel', function ($query) use ($personnelEmail) {
+            $query->where('email', $personnelEmail);
+        })->get();
+
+        return response()->json(['projects' => $projects], 200);
+    }
     public function storeTicket(Request $request)
     {
+        // Validate the incoming request for the ticket
         $request->validate([
             'project_id' => 'required|integer|exists:projects,id',
             'object' => 'required|string',
             'description' => 'required|string',
             'closing_date' => 'required|date',
-            'status' => 'required|in:pending,inprogress,fixed',
-            'priority' => 'required|in:low,high,urgent',
-            'file' => 'array',
-            'file.*' => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
+        //    'file' => 'array',
+            'files.*' => 'required|file|max:2048'
+           // 'file.*' => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
         ]);
 
         $project = Project::findOrFail($request->input('project_id'));
         $user = $request->user();
 
+        // Check if user is the client of the project
+        if (!$user->hasRole('admin')) {
         if ($user->email !== $project->client_email) {
             abort(403, 'Unauthorized action.');
         }
-
-        $ticket = new Ticket([
-            'object' => $request->input('object'),
-            'description' => $request->input('description'),
-            'closing_date' => $request->input('closing_date'),
-            'status' => $request->input('status'),
-            'priority' => $request->input('priority'),
-        ]);
-
-        $project->tickets()->save($ticket);
-        if ($request->hasFile('file')) {
-            foreach ($request->file('file') as $file) {
-                $media = new File();
-                $media->file_name = $file->getClientOriginalName();
-                $media->file_path = $file->store('files');
-
-                $ticket->files()->save($media);
-            }
         }
+        // Create the ticket
+        $ticket = new Ticket();
+        $ticket->project_id = $project->id;
+        $ticket->object = $request->input('object');
+        $ticket->description = $request->input('description');
+        $ticket->closing_date = $request->input('closing_date');
+        $ticket->status=$request['status'] ?? "Pending";
+        $ticket->priority=$request['priority'] ?? "Low";
+        $ticket->save();
+         if ($request->hasFile('file')) {
 
+                $files = $request->file('file');
+              foreach ($files as $file) {
 
+                  if ($file) {
+                //  return response()->json([ $file], 201);
+                  $media = new File();
+                  $media->file_name = $file->getClientOriginalName();
+                  $media->file_path = $file->store('public/files');
 
+                  $ticket->files()->save($media);
+              }
+              }
+            }
+        // Get admin and assigned personnel emails
+        $adminEmail = User::where(function ($query) {
+            $query->where('role', 'admin');
+        })->pluck('email')->toArray();
 
-        $adminEmail = User::where('role', 'admin')->pluck('email')->toArray();
         $personnelEmails = $project->personnel->pluck('email')->toArray();
+
         $emails = array_merge($adminEmail, $personnelEmails);
 
+        // Send email to admin and assigned personnel
         Mail::to($emails)->send(new TicketCreated($ticket, $project));
 
         return response()->json(['message' => 'Ticket created successfully'], 201);
     }
 
-
     public function showTicket($id)
+    {
+        $ticket = Ticket::with('project', 'user', 'files')->findOrFail($id);
+
+            // Get the file URLs
+            $fileUrls = $ticket->files->pluck('url');
+
+            return response()->json(['ticket' => $ticket, 'file_urls' => $fileUrls]);
+    }
+
+    public function showClientTickets()
     {
         $user = auth()->user();
 
+        // Retrieve the tickets associated with the client's projects
+        $tickets = Ticket::whereHas('project', function ($query) use ($user) {
+            $query->where('client_email', $user->email);
+        })->get();
+
+        return response()->json(['tickets' => $tickets]);
+    }
+
+    public function viewAssignedTickets()
+    {
+        $user = auth()->user();
+
+       // Retrieve the personnel ID based on the user's email
+          $personnel = Personnel::where('email', $user->email)->first();
+
+          if (!$personnel) {
+              return response()->json(['message' => 'Personnel not found'], 404);
+          }
+
+          // Retrieve all tickets assigned to the personnel
+          $assignedTickets = Ticket::whereHas('project.personnel', function ($query) use ($personnel) {
+              $query->where('personnel.id', $personnel->id);
+          })->get();
+
+        return response()->json(['tickets' => $assignedTickets]);
+    }
+    public function getAllTickets()
+    {
         // Check if user is an admin
-        if ($user->role !== 'admin') {
+        if (auth()->user()->role !== 'admin') {
             abort(403, 'Unauthorized action.');
         }
 
-        // Retrieve the ticket with attachments
-        $ticket = Ticket::with('media')->findOrFail($id);
+        // Retrieve all tickets
+        $tickets = Ticket::all();
 
-        return response()->json(['ticket' => $ticket]);
+        return response()->json(['tickets' => $tickets]);
     }
-
-    public function getAllTickets(Request $request)
-    {
-        $user = $request->user();
-
-        if ($user->hasRole('admin')) {
-            // If user is an admin, return all tickets with attachments
-            $tickets = Ticket::with('media')->get();
-        } elseif ($user->hasRole('client')) {
-            // If user is a client, return tickets associated with the client's projects with attachments
-            $tickets = Ticket::whereHas('project', function ($query) use ($user) {
-                $query->where('client_email', $user->email);
-            })->with('media')->get();
-        } elseif ($user->hasRole('personnel')) {
-            // If user is personnel, return tickets assigned to the personnel with attachments
-            $tickets = Ticket::whereHas('project.personnel', function ($query) use ($user) {
-                $query->where('users.id', $user->id);
-            })->with('media')->get();
-        } else {
-            abort(403, 'Unauthorized action.');
-        }
-
-        return response()->json(['tickets' => $tickets], 200);
-    }
-    public function updateTicket(Request $request, $id)
-    {
-        $request->validate([
-            'object' => 'required|string',
-            'description' => 'required|string',
-            'closing_date' => 'required|date',
-            'status' => 'required|in:pending,inprogress,fixed',
-            'priority' => 'required|in:low,high,urgent',
-            'attachments' => 'array',
-            'attachments.*' => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
-        ]);
-
-        $ticket = Ticket::findOrFail($id);
-        $project = $ticket->project;
-        $user = $request->user();
-
-        if ($user->email !== $project->client_email) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $ticket->object = $request->input('object');
-        $ticket->description = $request->input('description');
-        $ticket->closing_date = $request->input('closing_date');
-        $ticket->status = $request->input('status');
-        $ticket->priority = $request->input('priority');
-        $ticket->save();
-
-        if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $attachment) {
-                $ticket->addMedia($attachment)->toMediaCollection('attachments');
-            }
-        }
-
-
-        return response()->json(['message' => 'Ticket updated successfully'], 200);
-    }
-    public function deleteTicket(Request $request, $id)
-    {
-        $ticket = Ticket::findOrFail($id);
-        $user = $request->user();
-
-        if ($user->email !== $ticket->project->client_email) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        // Delete the ticket's media (attachments) from the storage
-        $ticket->clearMediaCollection('attachments');
-
-        // Delete the ticket
-        $ticket->delete();
-
-        return response()->json(['message' => 'Ticket deleted successfully'], 200);
-    }
-
-
-
     public function answersByTicket(Request $request,$id)
     {
             $answers = Answer::whereHas('ticket', function ($query) use ($id) {
@@ -349,6 +345,30 @@ class ProjectController extends Controller
 
             return response()->json($response);
 
+    }
+    public function deleteTicketAndAnswers($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $ticket = Ticket::find($id);
+
+            if (!$ticket) {
+                return response()->json(['message' => 'Ticket not found'], 404);
+            }
+
+            $ticket->delete();
+
+            Answer::where('ticket_id', $id)->delete();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Ticket and related answers deleted successfully']);
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            return response()->json(['message' => 'Failed to delete ticket and related answers'], 500);
+        }
     }
     public function answerTicket(Request $request, $id)
     {
@@ -390,7 +410,159 @@ class ProjectController extends Controller
         //return redirect()->back()->with('success', 'Answer added successfully.');
         return response()->json(['message' => 'Comment created successfully'], 200);
     }
+         public function updateTicket(Request $request, $id)
+                 {
+                  /* $user = $request->user();
+                     if (!$user->hasRole('admin')) {
+                         abort(403, 'Unauthorized action.');
+                     }
+                  */
 
+                    $request->validate([
+                        'object' => 'required|string',
+                        'description' => 'required|string',
+                        'status' => 'string',
+
+                    ]);
+                     $ticket = Ticket::find($id);
+                           $ticket->object = $request->input('object');
+                           $ticket->description = $request->input('description');
+                           $ticket->status=$request['status'] ?? $ticket->status;
+                           $ticket->priority=$request['priority'] ?? $ticket->priority;
+                           /* if ($request->hasFile('files')) {
+                                $uploadedFiles = $request->file('files');
+                                foreach ($uploadedFiles as $uploadedFile) {
+                                    if ($uploadedFile) {
+                                        $media = new File();
+                                        $media->file_name = $uploadedFile->getClientOriginalName();
+                                        $media->file_path = $uploadedFile->store('files');
+                                        $ticket->files()->save($media);
+                                    }
+                                }
+                            }*/
+                           $ticket->save();
+                         return response()->json(['Success' => 'Ticket Updated'],200);
+
+                 }
+    public function getStatusStatistics()
+    {
+       $user = auth()->user();
+
+            if ($user->hasRole('admin')) {
+                $statistics = Ticket::groupBy('status')
+                    ->select('status', \DB::raw('count(*) as count'))
+                    ->get()
+                    ->pluck('count', 'status')
+                    ->toArray();
+            }elseif ($user->hasRole('client')) {
+                  $statistics = Ticket::whereHas('project', function ($query) use ($user) {
+                  $query->where('client_email', $user->email);
+                  })
+                  ->groupBy('status')
+                  ->select('status', \DB::raw('count(*) as count'))
+                  ->get()
+                  ->pluck('count', 'status')
+                  ->toArray();
+            }elseif ($user->hasRole('personnel')) {
+                 // Personnel statistics
+                  $personnel = Personnel::where('email', $user->email)->first();
+
+                    if (!$personnel) {
+                       return response()->json(['message' => 'Personnel not found'], 404);
+                    }
+
+                     $statistics = Ticket::whereHas('project.personnel', function ($query) use ($personnel) {
+                     $query->where('personnel.id', $personnel->id);
+                     })
+                     ->groupBy('status')
+                     ->select('status', \DB::raw('count(*) as count'))
+                     ->get()
+                     ->pluck('count', 'status')
+                     ->toArray();
+            }
+
+        return $statistics;
+    }
+     public function getPriorityStatistics()
+        {
+            $user = auth()->user();
+
+            if ($user->hasRole('admin')) {
+                        $statistics = Ticket::groupBy('priority')
+                            ->select('priority', \DB::raw('count(*) as count'))
+                            ->get()
+                            ->pluck('count', 'priority')
+                            ->toArray();
+            }elseif ($user->hasRole('client')) {
+             $statistics = Ticket::whereHas('project', function ($query) use ($user) {
+                $query->where('client_email', $user->email);
+                 })
+                 ->groupBy('priority')
+                 ->select('priority', \DB::raw('count(*) as count'))
+                 ->get()
+                 ->pluck('count', 'priority')
+                 ->toArray();
+            }elseif ($user->hasRole('personnel')) {
+                        // Personnel statistics
+                              $personnel = Personnel::where('email', $user->email)->first();
+
+                              if (!$personnel) {
+                              return response()->json(['message' => 'Personnel not found'], 404);
+                                }
+
+                            $statistics = Ticket::whereHas('project.personnel', function ($query) use ($personnel) {
+                                    $query->where('personnel.id', $personnel->id);
+                                })
+                                ->groupBy('priority')
+                                ->select('priority', \DB::raw('count(*) as count'))
+                                ->get()
+                                ->pluck('count', 'priority')
+                                ->toArray();
+            }
+
+            return $statistics;
+        }
+        public function getEtatStatistics()
+                {
+                 $user = auth()->user();
+
+                   if ($user->hasRole('admin')) {
+                                     $statistics = Project::groupBy('etat')
+                                         ->select('etat', \DB::raw('count(*) as count'))
+                                         ->get()
+                                         ->pluck('count', 'etat')
+                                         ->toArray();
+                   }
+                    elseif ($user->hasRole('client')) {
+                                   $statistics = Project::where('client_email', $user->email)
+                                           ->groupBy('etat')
+                                           ->select('etat', \DB::raw('count(*) as count'))
+                                           ->get()
+                                           ->pluck('count', 'etat')
+                                           ->toArray();
+                   }elseif ($user->hasRole('personnel')) {
+                           // Retrieve the personnel ID based on the user's email
+                           $personnel = Personnel::where('email', $user->email)->first();
+
+                           if (!$personnel) {
+                               return response()->json(['message' => 'Personnel not found'], 404);
+                           }
+
+                           // Retrieve the statistics for the personnel's projects
+                           $statistics = Project::whereHas('personnel', function ($query) use ($personnel) {
+                                   $query->where('personnel.id', $personnel->id);
+                               })
+                               ->groupBy('etat')
+                               ->select('etat', \DB::raw('count(*) as count'))
+                               ->get()
+                               ->pluck('count', 'etat')
+                               ->toArray();
+                        }else{
+                          abort(401, 'Unauthenticated');
+                        }
+
+                    return $statistics;
+                }
 
 
 

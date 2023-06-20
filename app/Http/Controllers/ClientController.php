@@ -26,7 +26,7 @@ class ClientController extends Controller
             'address' => 'required|string|max:255',
             'social_reason' => 'required|string|max:255',
             'RNE' => 'required|string|max:255',
-            'confirmation' => 'boolean',
+            'confirmation' => 'nullable|boolean',
         ]);
         $client = new Client();
         $client->name = $data['name'];
@@ -36,9 +36,9 @@ class ClientController extends Controller
         $client->social_reason = $request->input('social_reason');
         $client->RNE = $request->input('RNE');
         // Generate a random 10 char password from below chars
-        $random = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ234567890!$%^&!$%^&');
+        $random = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ234567890/+-*');
         $password = substr($random, 0, 10);
-        $client->confirmation = $request->input('confirmation');
+        $client->confirmation = $request->input('confirmation') ?? false;
         $client->password=$password;
         $client->save();
 
@@ -77,31 +77,37 @@ class ClientController extends Controller
         ]);
 
         $client = Client::find($id);
+          $userEmail=$client->email;
+          $clientConfirmation=$client->confirmation;
         if ($client) {
-            $client->name = $data['name'] ?? $client->name;
-            $client->email = $data['email'] ?? $client->email;
+            $client->name = $request->input('name') ?? $client->name;
+            $client->email = $request->input('email') ?? $client->email;
             $client->phone_number = $data['phone_number'] ?? $client->phone_number;
             $client->address = $data['address'] ?? $client->address;
             $client->social_reason = $data['social_reason'] ?? $client->social_reason;
             $client->RNE = $data['RNE'] ?? $client->RNE;
             $client->confirmation = $request->input('confirmation'); // Update the confirmation attribute
-            if ($data['confirmation']) {
+            if (($data['confirmation'] <> $clientConfirmation && $data['confirmation'])|| ($data['confirmation'] && $userEmail <> $client->email ) ) {
                 $password =$client->password;
                 Mail::to($client->email)->send(new NewClientMail($client, $password));
             }
-
             $client->save();
+              // Find the user record for the personnel
+                    $user = User::where('email', $userEmail)->first();
+                    if ($user) {
+                        // Update the user record for the personnel
+                        $user->name =  $client->name;
+                        $user->email = $client->email;
+                        $user->save();
+                    } else {
+                        return response()->json(['error' => 'User not found'], 404);
+                    }
+
             return response()->json(['success' => true]);
         } else {
             return response()->json(['error' => 'Client not found'], 404);
         }
-        // Find the user record for the personnel
-        $user = User::where('email', $client->email)->first();
 
-        // Update the user record for the personnel
-        $user->name = $data['name'];
-        $user->email = $data['email'];
-        $user->save();
 
 
     }

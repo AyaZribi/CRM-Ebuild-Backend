@@ -7,14 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Devis extends Model
 {
-    protected $fillable =
-        ['client',
+    protected $fillable = ['client',
         'client_email',
         'date_creation',
-        'calculateTtc',
         'nombre_operations',
-        'switch_to_facture',
-        'note',];
+        'invoiced'
+          ];
     protected static function booted()
     {
         static::creating(function ($devis) {
@@ -43,5 +41,13 @@ class Devis extends Model
     {
         return $this->hasMany(Operation::class);
     }
+    public function invoiced()
+    {
+        return $this->belongsTo(Invoiced::class);
+    }
+     public function note()
+        {
+            return $this->belongsTo(Note::class);
+        }
 }
 

@@ -38,7 +38,7 @@ class TacheCreated extends Mailable
      */
     public function build()
     {
-        $subject = "New Tache: {$this->tache->intitule}";
+        $subject = "[EBUILD] New Tache: {$this->tache->intitule}";
 
 
         $email = $this->subject($subject)

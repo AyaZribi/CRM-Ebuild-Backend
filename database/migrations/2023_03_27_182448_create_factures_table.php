@@ -22,10 +22,6 @@ return new class extends Migration
             $table->decimal('total_montant_ht', 10, 2)->nullable();
             $table->decimal('total_montant_ttc', 10, 2)->nullable();
             $table->string('total_montant_letters')->nullable();
-            $table->boolean('calculateTtc')->default(true);
-            $table->text('note')->nullable();
-            $table->unsignedBigInteger('devis_id')->nullable();
-            $table->foreign('devis_id')->references('id')->on('devis')->onDelete('set null');
             $table->timestamps();
         });
 

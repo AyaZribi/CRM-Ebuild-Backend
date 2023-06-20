@@ -7,7 +7,7 @@ use App\Models\Client;
 use App\Models\personnel;
 use App\Models\User;
 use App\Models\Role;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -71,18 +71,21 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->tokens()->delete();
-        return response()->json(['message' => 'Successfully logged out']);
+       if ($request->user()) {
+               $request->user()->tokens()->delete();
+           }
+
+           return response()->json(['message' => 'Successfully logged out']);
     }
 
     public function ChangePassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'old_password' => 'required',
-            'new_password' => 'required|min:8|max:30',
+            'new_password' => 'required|min:4|max:30',
             'confirm_password' => 'required|same:new_password'
         ]);
-        if ($validator->fails()) {
+        /*if ($validator->fails()) {
             return response()->json([
                 'message' => 'validations fails',
                 'errors' => $validator->errors()
@@ -95,22 +98,55 @@ class AuthController extends Controller
                 'message' => 'Unauthenticated',
                 'errors' => ['user' => 'Unauthenticated']
             ], 401);
-        }
+        }*/
 
         $user = $request->user();
-        if (Hash::check($request->old_password, $user->password)) {
-            $user->update([
-                'password' => Hash::make($request->new_password)
-            ]);
-            return response()->json([
-                'message' => ' password successfully updated'
-            ], 200);
-        } else {
-            return response()->json([
-                'message' => 'old password does not match',
-                'errors' => ['old_password' => 'The old password is incorrect']
-            ], 422);
-        }
+        $credentials = $this->credentials(
+            new \Illuminate\Http\Request(["email" => $user->email, "password" => $request->old_password])
+        );
+       /* return response()->json([
+                        '1' => $credentials,
+                        '2' => $this->attemptLogin($credentials)
+                    ], 422);*/
+
+      if ($this->attemptLogin($credentials)) {
+      //  if (Hash::check($request->old_password, $user->password)) {
+        $user->password = Hash::make($request->new_password);
+
+           DB::beginTransaction();
+
+           try {
+               $user->save();
+
+               if ($user->hasRole('client')) {
+                   $client = Client::where('email', $user->email)->first();
+                   $client->password = $request->new_password;
+                   $client->save();
+               } elseif ($user->hasRole('personnel')) {
+                   $personnel = Personnel::where('email', $user->email)->first();
+                   $personnel->password = $request->new_password;
+                   $personnel->save();
+               }
+
+               DB::commit();
+
+               return response()->json([
+                   'message' => 'Password successfully updated'
+               ], 200);
+           } catch (\Exception $e) {
+               DB::rollback();
+
+               return response()->json([
+                   'message' => 'Failed to update password',
+                   'error' => $e->getMessage()
+               ], 500);
+           }
+       } else {
+           return response()->json([
+               'message' => 'Old password does not match',
+               'errors' => ['old_password' => 'The old password is incorrect']
+           ], 422);
+       }
     }
 
 
@@ -135,14 +171,14 @@ class AuthController extends Controller
         ]);
 
         // Generate random 10 char password from below chars
-        $random = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ234567890!$%^&!$%^&');
+        $random = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ234567890^*-+@');
         $password = substr($random, 0, 10);
 
         // Create the new personnel in the database
         $personnel = new Personnel();
         $personnel->name = $data['name'];
         $personnel->email = $data['email'];
-        $personnel->password = Hash::make($password);
+        $personnel->password =$password;
         $personnel->phone_number = $request->input('phone_number');
         $personnel->address = $request->input('address');
         $personnel->ID_card = $request->input('ID_card');
@@ -171,9 +207,9 @@ class AuthController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        if (!$user->hasRole('admin')) {
+      /*  if (!$user->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
-        }
+        }*/
         $personnel = Personnel::all();
         return response()->json(['personnel' => $personnel]);
     }
@@ -222,7 +258,11 @@ class AuthController extends Controller
 
             // Add other validation rules for your personnel attributes
         ]);
-
+               $user = User::where('email', $personnel->email)->first();
+               $user->name = $data['name'];
+               $user->email = $data['email'];
+               $user->save();
+        $oldMail=$personnel->email;
         // Update the personnel
         $personnel->name = $data['name'];
         $personnel->email = $data['email'];
@@ -233,14 +273,14 @@ class AuthController extends Controller
         $personnel->subcontracting = $request->input('subcontracting'); // set the subcontracting attribute value
         $personnel->salary = $request->input('salary');
         $personnel->save();
-
+        if($oldMail <> $personnel->email)
+        {
+        Mail::to($personnel->email)->send(new NewPersonnelMail($personnel, $personnel->password));
+        }
         // Find the user record for the personnel
-        $user = User::where('email', $personnel->email)->first();
 
-        // Update the user record for the personnel
-        $user->name = $data['name'];
-        $user->email = $data['email'];
-        $user->save();
+
+
 
         return response()->json(['success' => true]);
     }

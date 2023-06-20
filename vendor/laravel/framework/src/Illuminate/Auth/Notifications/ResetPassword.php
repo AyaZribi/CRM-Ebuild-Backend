@@ -98,7 +98,7 @@ class ResetPassword extends Notification
             'token' => $this->token,
             'email' => $notifiable->getEmailForPasswordReset(),
         ], false));*/
-       'http://localhost:4200/pages/authentication/resetpassword/'.$this->token.'/'.$notifiable->getEmailForPasswordRes ;
+     return  'http://localhost:4200/pages/authentication/resetpassword/'.$this->token.'/'.$notifiable->getEmailForPasswordReset() ;
     }
 
     /**

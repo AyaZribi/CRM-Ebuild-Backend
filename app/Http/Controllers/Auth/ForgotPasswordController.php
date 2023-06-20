@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
+use App\Models\Client;
+use App\Models\User;
+use App\Models\Personnel;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
@@ -44,10 +47,21 @@ class ForgotPasswordController extends Controller
             event(new PasswordReset($user));
         }
         );
-
-        return $status === Password::PASSWORD_RESET
-            ? response()->json(['message' => __($status), 'token' => $request->input('token')], 200)
-            : response()->json(['error' => __($status)], 500);
+         if($status === Password::PASSWORD_RESET)
+         {
+          $user = User::where('email', $request->email)->first();
+         if ($user->hasRole('client')) {
+                             $client = Client::where('email', $user->email)->first();
+                             $client->password = $request->password;
+                             $client->save();
+                         } elseif ($user->hasRole('personnel')) {
+                             $personnel = Personnel::where('email', $user->email)->first();
+                             $personnel->password = $request->password;
+                             $personnel->save();
+                         }
+         return response()->json(['message' => __($status), 'token' => $request->input('token')], 200);
+         }
+        return response()->json(['error' => __($status)], 500);
     }
 
 

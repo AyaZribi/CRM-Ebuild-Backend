@@ -4,24 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Ticket extends Model implements HasMedia
+class Ticket extends Model
 {
-    use InteractsWithMedia;
     protected $fillable = [
         'project_id',
         'object',
         'description',
         'closing_date',
         'status',
-        'priority'
+        'priority',
     ];
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('attachments');
-    }
 
     public function project()
     {
@@ -35,8 +28,23 @@ class Ticket extends Model implements HasMedia
     {
         return $this->belongsTo(User::class);
     }
-    public function files()
+    public function status()
     {
-        return $this->hasMany(File::class);
+        return $this->belongsTo(Status::class);
     }
+
+    public function priority()
+    {
+        return $this->belongsTo(Priority::class);
+    }
+
+    public function files()
+        {
+            return $this->hasMany(File::class);
+        }
+
+   public function registerMediaCollections(): void
+     {
+         $this->addMediaCollection('attachments');
+     }
 }

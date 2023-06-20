@@ -108,7 +108,6 @@
 </div>
 
 <div class="header" >
-    <img src="{{ asset('resources/images/logo.svg') }}" alt="Logo">
 
 
 </div>

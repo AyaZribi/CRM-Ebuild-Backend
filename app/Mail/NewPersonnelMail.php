@@ -32,7 +32,7 @@ $this->password = $password;
 */
     public function build()
     {
-        return $this->subject('Your new account has been created')
+        return $this->subject('[EBUILD] Your new account has been created')
             ->view('new_personnel');
     }
 }

@@ -8,7 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class Tache extends Model
 {
     use HasFactory;
-    protected $fillable = ['intitule', 'deadline', 'description', 'file', 'image', 'project_id', 'projectname'];
+    protected $fillable = ['intitule',
+     'deadline',
+     'description',
+     'file',
+     'image',
+     'important',
+     'status',
+     'project_id',
+     'projectname'];
     public function project()
     {
         return $this->belongsTo(Project::class);

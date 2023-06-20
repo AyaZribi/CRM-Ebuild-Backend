@@ -132,12 +132,101 @@ class TacheController extends Controller
 
         return response()->json(['message' => 'Tache deleted successfully'], 200);
     }
-    public function show(Tache $tache)
+   /* public function show(Tache $tache)
     {
         $tache->load('comments');
 
         return response()->json(['tache' => $tache], 200);
+    }*/
+    public function show($id)
+    {
+           $tache = Tache::with('personnel')->findOrFail($id);
+
+           // Rename the personnel attribute to staff
+           $tache->setAttribute('staff', $tache->getAttribute('personnel'));
+           $tache->unsetRelation('personnel');
+
+           // Remove the pivot object from each staff member
+           foreach ($tache->staff as $staffMember) {
+               $staffMember->makeHidden('pivot');
+           }
+
+           return response()->json($tache->toArray(), 200);
     }
+  public function showall(Request $request)
+    {
+        //$user = $request->user();
+        //if (!$user->hasRole('admin')) {
+        //    abort(403, 'Unauthorized action.');
+        //}
+        $taches = tache::all();
+        return response()->json($taches, 200);
+    }
+    function changeCompleted($id)
+    {
+      $tache = Tache::find($id);
+
+        if ($tache->status == "InProgress") {
+            $tache->status = "Completed";
+        } else {
+            $tache->status = "InProgress";
+        }
+
+        $tache->save();
+
+        return response()->json(['Success' => 'Status changed'], 200);
+    }
+    function addFavori($id)
+    {
+     $tache = Tache::find($id);
+
+            $tache->important=!($tache->important);
+
+            $tache->save();
+
+            return response()->json(['Success' => 'Status changed'], 200);
+    }
+    public function getFavori()
+    {
+
+        $tasksFavori = Tache::where('important', true)->get();
+
+        return response()->json($tasksFavori, 200);
+    }
+
+    public function getCompleted()
+    {
+        $completedTasks = Tache::where('status', 'Completed')->get();
+
+        return response()->json($completedTasks, 200);
+    }
+   public function commentsByTache(Request $request, $id)
+   {
+       $comments = Comment::where('tache_id', $id)->get();
+
+       return response()->json($comments);
+   }
+
+
+
+
+
+
+
+     public function getTacheStatusStatistics()
+                    {
+                        $statistics = Tache::groupBy('status')
+                            ->select('status', \DB::raw('count(*) as count'))
+                            ->get()
+                            ->pluck('count', 'status')
+                            ->toArray();
+
+                        return $statistics;
+                    }
+
+
+
+
 
 
 }

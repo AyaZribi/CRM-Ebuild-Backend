@@ -38,6 +38,6 @@ class ProjectCreated extends Mailable
     public function build()
     {
         return $this->view('emails.project-created')
-            ->subject('New Project Created');
+            ->subject('[EBUILD] New Project Created');
     }
 }

@@ -35,7 +35,7 @@ class TicketCreated extends Mailable
     public function build()
     {
         return $this->view('emails.ticket_created')
-            ->subject('New Ticket Created')
+            ->subject('[EBUILD] New Ticket Created')
             ->with([
                 'ticket' => $this->ticket,
                 'project' => $this->project,
