@@ -41,13 +41,13 @@ class Devis extends Model
     {
         return $this->hasMany(Operation::class);
     }
-    public function invoiced()
+   /* public function invoiced()
     {
         return $this->belongsTo(Invoiced::class);
     }
      public function note()
         {
             return $this->belongsTo(Note::class);
-        }
+        }*/
 }
 

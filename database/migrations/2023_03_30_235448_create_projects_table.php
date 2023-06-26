@@ -11,10 +11,11 @@ return new class extends Migration
      *
      * @return void
      */
-    public function up()
+
+        public function up()
     {
-        Schema::table('projects', function (Blueprint $table) {
-           /* $table->id();
+        Schema::create('projects', function (Blueprint $table) {
+            $table->id();
             $table->string('client');
             $table->string('client_email');
             $table->string('projectname');
@@ -23,9 +24,9 @@ return new class extends Migration
             $table->string('database');
             $table->text('description');
             $table->date('datecreation');
-            $table->date('deadline');*/
-            $table->string('etat')->default('InProgress');
-            //$table->timestamps();
+            $table->date('deadline');
+            $table->string('etat');
+            $table->timestamps();
         });
     }
 
@@ -37,6 +38,6 @@ return new class extends Migration
     public function down()
     {
      //   Schema::dropIfExists('projects');
-       $table->dropColumn('etat');
+        Schema::dropIfExists('projects');
     }
 };

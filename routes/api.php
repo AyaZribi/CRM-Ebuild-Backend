@@ -64,6 +64,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/facture/{id}', [FactureController::class, 'show']);
     Route::get('/factures', [FactureController::class, 'showall']);
     Route::get('/factures/{facture}/pdf', [FactureController::class, 'generatePdf']);
+
     //Route::get('/factures/{facture}/pdf', [FactureController::class, 'sendPdfToClient']);
     ////////////////////////devis////////////////////////
 
@@ -112,7 +113,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 ////////////////////////devis////////////////////////
 
-Route::post('/tache', [TacheController::class, 'store']);
+Route::post('/tachesss', [TacheController::class, 'storetache']);
 Route::put('/taches/{tache}',[TacheController::class, 'update']);
 Route::delete('/taches/{tache}',[TacheController::class, 'destroy']);
 Route::get('/taches/{tache}',[TacheController::class, 'show']);

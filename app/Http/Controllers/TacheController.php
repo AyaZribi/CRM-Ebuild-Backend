@@ -14,8 +14,9 @@ use Illuminate\Support\Facades\Mail;
 class TacheController extends Controller
 {
 
-    public function store(Request $request)
+    public function storetache(Request $request)
     {
+
         $request->validate([
             'intitule' => 'required|string',
             'deadline' => 'required|date',
@@ -155,17 +156,12 @@ class TacheController extends Controller
     }
   public function showall(Request $request)
     {
-        //$user = $request->user();
-        //if (!$user->hasRole('admin')) {
-        //    abort(403, 'Unauthorized action.');
-        //}
         $taches = tache::all();
         return response()->json($taches, 200);
     }
     function changeCompleted($id)
     {
       $tache = Tache::find($id);
-
         if ($tache->status == "InProgress") {
             $tache->status = "Completed";
         } else {
@@ -173,15 +169,12 @@ class TacheController extends Controller
         }
 
         $tache->save();
-
         return response()->json(['Success' => 'Status changed'], 200);
     }
     function addFavori($id)
     {
      $tache = Tache::find($id);
-
             $tache->important=!($tache->important);
-
             $tache->save();
 
             return response()->json(['Success' => 'Status changed'], 200);

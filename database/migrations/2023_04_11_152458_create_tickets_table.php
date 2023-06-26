@@ -11,7 +11,7 @@ return new class extends Migration
      *
      * @return void
      */
-   /* public function up()
+   public function up()
     {
         Schema::create('tickets', function (Blueprint $table) {
             $table->id();
@@ -24,30 +24,17 @@ return new class extends Migration
             $table->timestamps();
         });
     }
-*/
+
     /**
      * Reverse the migrations.
      *
      * @return void
      */
-   /* public function down()
+    public function down()
     {
         Schema::dropIfExists('tickets');
-        
-    }*/
-       public function up()
-        {
-            Schema::table('tickets', function (Blueprint $table) {
-                $table->string('status')->default('Pending');
-                $table->string('priority')->default('Low');
-            });
-        }
 
-        public function down()
-        {
-            Schema::table('tickets', function (Blueprint $table) {
-                $table->dropColumn('status');
-                $table->dropColumn('priority');
-            });
-        }
+    }
+
+
 };

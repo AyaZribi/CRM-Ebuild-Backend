@@ -6,13 +6,14 @@ use App\Mail\FacturePdf;
 use App\Models\Client;
 use App\Models\Facture;
 use App\Models\User;
-
-use App\Models\Operationfacture;
-//use Barryvdh\DomPDF\PDF;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use Barryvdh\DomPDF\PDF;
+//use Barryvdh\DomPDF\Facade\Pdf;
+//use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Http\Request;
 
 use Dompdf\Dompdf;
+
+use App\Models\Operationfacture;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
 use Illuminate\Http\Response;
@@ -20,7 +21,6 @@ use Illuminate\Http\Response;
 
 class FactureController extends Controller
 {
-
     public function store(Request $request)
     {
         $user = $request->user();
@@ -34,11 +34,13 @@ class FactureController extends Controller
             'operationfactures.*.nature' => 'required|string|max:255',
             'operationfactures.*.quantité' => 'required|integer|min:1',
             'operationfactures.*.montant_ht' => 'required|numeric|min:0',
-            'operationfactures.*.taux_tva' => 'required|numeric|min:0',
+            'operationfactures.*.taux_tva' => 'numeric|min:0',
+            'calculate_ttc' => 'boolean',
+            'note' => 'nullable|string|max:255',
 
         ]);
         $client = Client::where('email', $request->input('client_email'))->first();
-
+        $calculateTtc = $request->input('calculate_ttc', true);
 
         $facture = Facture::create([
             'client' => $client->name,
@@ -46,42 +48,53 @@ class FactureController extends Controller
             'client_id' => $client->id,
             'nombre_operations' => count($request['operationfactures']),
             'date_creation' => now(),
+            'note' => $request->input('note'),
+
         ]);
 
         $totalMontantHt = 0;
         $totalMontantTtc = 0;
 
-
         foreach ($request->input('operationfactures') as $operationData) {
+            $tauxTva = isset($operationData['taux_tva']) ? $operationData['taux_tva'] : 19; // Use 19 as default if taux_tva is not provided
+
             $operation = new Operationfacture([
                 'nature' => $operationData['nature'],
                 'quantité' => $operationData['quantité'],
                 'montant_ht' => $operationData['montant_ht'],
-                'taux_tva' => $operationData['taux_tva'],
-                'montant_ttc' => $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100),
+                'taux_tva' => $tauxTva,
             ]);
+
+            if (!$calculateTtc) {
+                $operation->montant_ttc = $operationData['montant_ht'] * (1 + $tauxTva / 100);
+            }
 
             $facture->operationfactures()->save($operation);
 
             $totalMontantHt += $operationData['montant_ht'] * $operationData['quantité'];
-            $totalMontantTtc += $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100) * $operationData['quantité'];
 
+            if (!$calculateTtc) {
+                // Only add to totalMontantTtc if calculateTtc is false
+                $totalMontantTtc += $operationData['montant_ht'] * (1 + ($operationData['taux_tva'] ?? 19) / 100) * $operationData['quantité'];
+            }else {
+                $totalMontantTtc += $operationData['montant_ht'] * $operationData['quantité'];
+        }
         }
 
         $totalMontantTtc += 1.00; // Add 1% timbre
 
-        // Convert the total montant to letters
+        // Convert the appropriate total montant to letters based on calculateTtc value
         $totalMontantLetters = $this->convertMontantToLetters($totalMontantTtc);
 
         $facture->update([
             'total_montant_ht' => $totalMontantHt,
-            'total_montant_ttc' => $totalMontantTtc,
+            'total_montant_ttc' =>  $totalMontantTtc,
             'total_montant_letters' => $totalMontantLetters,
         ]);
 
         return response()->json($facture, 201);
-
     }
+
 
     function convertMontantToLetters($montant)
     {
@@ -97,9 +110,13 @@ class FactureController extends Controller
         if ($intPart == 0) {
             $result .= 'zéro ';
         }
-
         if ($intPart >= 1000) {
-            $result .= $hundreds[(int)($intPart / 1000)] . ' mille ';
+            $thousands = (int)($intPart / 1000);
+            if ($thousands >= 2) {
+                $result .= $units[$thousands] . ' mille ';
+            } elseif ($thousands == 1) {
+                $result .= 'mille ';
+            }
             $intPart %= 1000;
         }
 
@@ -109,10 +126,16 @@ class FactureController extends Controller
         }
 
         if ($intPart >= 20) {
-            $result .= $tens[(int)($intPart / 10)] . '-';
+            $tensValue = (int)($intPart / 10);
+            $result .= $tens[$tensValue];
             $intPart %= 10;
+            if ($tensValue == 7 || $tensValue == 9) {
+                $result = rtrim($result, 'e');
+            }
+            $result .= '-';
         } elseif ($intPart >= 10) {
-            $result .= $tens[$intPart - 10] . '-';
+            $specialTens = ['dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize'];
+            $result .= $specialTens[$intPart - 10] . '-';
             $intPart = 0;
         }
 
@@ -120,68 +143,91 @@ class FactureController extends Controller
             $result .= $units[$intPart] . ' ';
         }
 
-        if ($decPart == 0) {
-            $result .= 'TND';
-        } elseif ($decPart == 1) {
-            $result .= 'TND et une millime';
-        } else {
-            $result .= 'TND et ' . $this->convertMontantToLetters($decPart) . ' millimes';
+        $result .= 'Dinars';
+
+        if ($decPart > 0) {
+            $result .= ' et ' . $decPart . ' Centimes';
         }
 
         return $result;
     }
 
-     public function generatePdf(Facture $facture, Request $request)
-        {
-           $user = $request->user();
-             /*  if (!$user->hasRole('admin')) {
-                   abort(403, 'Unauthorized action.');
-               }*/
-               $facture->load('operationfactures');
-
-                // Retrieve the client by email
-                $client = Client::where('email', $facture->client_email)->first();
-
-                // Retrieve the phone number and RNE from the client object
-                $phone_number = $client->phone_number;
-                $RNE = $client->RNE;
+    public function generatePdf(Facture $facture)
+    {
 
 
-               //$facture->load('operationfactures');
-               //$client = Client::where('email', $facture->client_email)->first();
-               $phone_number = $client->phone_number;
-               $calculateTtc = $facture->calculateTtc;
-                $pdf = PDF::loadView('pdf.facture', compact('facture', 'phone_number','calculateTtc'));
+        $facture->load('operationfactures');
+        $client = Client::where('email', $facture->client_email)->first();
+        $phone_number = $client->phone_number;
 
-                return $pdf->download('facture.pdf');
-              /* // Create an instance of the PDF class
-               $pdf = new Dompdf();
 
-               // Set the path to your logo image file
-              // $logo = asset('resources/images/logo.svg');
-            //   $calculateTtc = $facture->calculateTtc; // Invert the calculateTtc value
 
-               $html = View::make('pdf.facture', compact('facture', 'phone_number','calculateTtc', 'pdf'))->render();
+        // Create an instance of the PDF class
+        $pdf = app(PDF::class);
 
-               $contxt = stream_context_create([
-                   'ssl' => [
-                       'verify_peer' => FALSE,
-                       'verify_peer_name' => FALSE,
-                       'allow_self_signed' => TRUE,
-                   ]
-               ]);
+        // Set the path to your logo image file
+        $logo = asset('resources/images/logo.svg');
+        $calculateTtc = $facture->calculateTtc; // Invert the calculateTtc value
 
-               $pdf->getOptions()->setIsHtml5ParserEnabled(true);
-               $pdf->getOptions()->setIsRemoteEnabled(true);
-               $pdf->getOptions()->setHttpContext($contxt);
 
-               $pdf->setPaper('A4', 'portrait');
-               $pdf->loadHtml($html);
-               $pdf->render();
+        $html = View::make('pdf.facture', compact('facture', 'phone_number','calculateTtc',  'logo', 'pdf'))->render();
 
-               return $pdf->stream("facture-{$facture->id}.pdf");
-            */
-        }
+        $dompdf = new Dompdf();
+
+        $dompdf->loadHtml($html);
+        $contxt = stream_context_create([
+            'ssl' => [
+                'verify_peer' => FALSE,
+                'verify_peer_name' => FALSE,
+                'allow_self_signed' => TRUE,
+            ]
+        ]);
+
+        // Set the options on the PDF instance
+        $pdf->setOptions(['isHTML5ParserEnabled' => true, 'isRemoteEnabled' => true]);
+        $pdf->getDomPDF()->setHttpContext($contxt);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return $dompdf->stream("facture-{$facture->id}.pdf") ;$pdf->download('facture.pdf');
+
+
+
+    }
+    /*public function generatePdf($id, Request $request)
+    {
+
+        $facture = Facture::with('operationfactures')->findOrFail($id);
+        $client = Client::where('email', $facture->client_email)->first();
+
+
+        $phone_number = $client->phone_number;
+        $calculateTtc = $facture->calculateTtc;
+        $pdf = PDF::loadView('pdf.facture', compact('facture', 'phone_number','calculateTtc'));
+
+        return $pdf->download('facture.pdf');
+        /* // Create an instance of the PDF class
+         $pdf = new Dompdf();
+         // Set the path to your logo image file
+        // $logo = asset('resources/images/logo.svg');
+      //   $calculateTtc = $facture->calculateTtc; // Invert the calculateTtc value
+         $html = View::make('pdf.facture', compact('facture', 'phone_number','calculateTtc', 'pdf'))->render();
+         $contxt = stream_context_create([
+             'ssl' => [
+                 'verify_peer' => FALSE,
+                 'verify_peer_name' => FALSE,
+                 'allow_self_signed' => TRUE,
+             ]
+         ]);
+         $pdf->getOptions()->setIsHtml5ParserEnabled(true);
+         $pdf->getOptions()->setIsRemoteEnabled(true);
+         $pdf->getOptions()->setHttpContext($contxt);
+         $pdf->setPaper('A4', 'portrait');
+         $pdf->loadHtml($html);
+         $pdf->render();
+         return $pdf->stream("facture-{$facture->id}.pdf");
+      */
+   // }
 
     public function update(Request $request, $id)
     {
@@ -198,8 +244,12 @@ class FactureController extends Controller
             'operationfactures.*.quantité' => 'required|integer|min:1',
             'operationfactures.*.montant_ht' => 'required|numeric|min:0',
             'operationfactures.*.taux_tva' => 'required|numeric|min:0',
+            'operationfactures.*.taux_tva' => 'numeric|min:0',
+            'calculate_ttc' => 'boolean',
+            'note' => 'nullable|string|max:255',
         ]);
 
+        $calculateTtc = $request->input('calculate_ttc', true);
         $client = Client::where('email', $request->input('client_email'))->first();
 
         $facture->update([
@@ -208,6 +258,7 @@ class FactureController extends Controller
             'client_id' => $client->id,
             'nombre_operations' => count($request['operationfactures']),
             'date_creation' => now(),
+            'note' => $request->input('note'),
         ]);
 
         $totalMontantHt = 0;
@@ -216,32 +267,48 @@ class FactureController extends Controller
         $facture->operationfactures()->delete();
 
         foreach ($request->input('operationfactures') as $operationData) {
+            $tauxTva = isset($operationData['taux_tva']) ? $operationData['taux_tva'] : 19; // Use 19 as default if taux_tva is not provided
+
             $operation = new Operationfacture([
                 'nature' => $operationData['nature'],
                 'quantité' => $operationData['quantité'],
                 'montant_ht' => $operationData['montant_ht'],
                 'taux_tva' => $operationData['taux_tva'],
                 'montant_ttc' => $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100),
+                'taux_tva' => $tauxTva,
             ]);
+
+            if (!$calculateTtc) {
+                $operation->montant_ttc = $operationData['montant_ht'] * (1 + $tauxTva / 100);
+            }
 
             $facture->operationfactures()->save($operation);
 
             $totalMontantHt += $operationData['montant_ht'] * $operationData['quantité'];
             $totalMontantTtc += $operationData['montant_ht'] * (1 + $operationData['taux_tva'] / 100) * $operationData['quantité'];
+
+            if (!$calculateTtc) {
+                // Only add to totalMontantTtc if calculateTtc is false
+                $totalMontantTtc += $operationData['montant_ht'] * (1 + ($operationData['taux_tva'] ?? 19) / 100) * $operationData['quantité'];
+            }
         }
 
         $totalMontantTtc += 1.00; // Add 1% timbre
 
         // Convert the total montant to letters
         $totalMontantLetters = $this->convertMontantToLetters($totalMontantTtc);
+        // Convert the appropriate total montant to letters based on calculateTtc value
+        $totalMontantLetters = $calculateTtc ? $this->convertMontantToLetters($totalMontantHt) : $this->convertMontantToLetters($totalMontantTtc);
 
         $facture->update([
             'total_montant_ht' => $totalMontantHt,
             'total_montant_ttc' => $totalMontantTtc,
+            'total_montant_ttc' => $calculateTtc ? null : $totalMontantTtc,
             'total_montant_letters' => $totalMontantLetters,
         ]);
 
         return response()->json($facture, 200);
+        return response()->json($facture, 201);
     }
 
     public function destroy($id, Request $request)
@@ -260,9 +327,9 @@ class FactureController extends Controller
     public function show($id, Request $request)
     {
         $user = $request->user();
-     /*   if (!$user->hasRole('admin')) {
+        if (!$user->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
-        }*/
+        }
         $facture = Facture::with('operationfactures')->findOrFail($id);
 
         return response()->json($facture, 200);
@@ -270,21 +337,22 @@ class FactureController extends Controller
 
     public function showall(Request $request)
     {
+
+
         $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
+        $facture = Facture::with('operationfactures')->get();
+
         if ($user->hasRole('admin')) {
-                           // If user is an admin, return all projects with personnel
-                           $facture = Facture::with('operationfactures')->get();
-                       } elseif ($user->hasRole('client')) {
-                           // If user is a client, return projects associated with the client's email
-                           $facture = Facture::where('client_email', $user->email)->get();
-                       } else {
-                           abort(403, 'Unauthorized action.');
-                       }
-     //   $facture = Facture::with('operationfactures')->get();
+            $facture = Facture::with('operationfactures')->get();
+        } else {
+            $facture = Facture::where('client_email', $user->email)->with('operationfactures')->get();
+        }
+
         return response()->json($facture, 200);
     }
-
-   // use Illuminate\Support\Facades\Mail;
 
       public function sendPdfToClient(Facture $facture,Request $request)
       {

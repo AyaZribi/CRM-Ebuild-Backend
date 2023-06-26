@@ -13,8 +13,8 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('taches', function (Blueprint $table) {
-          /*  $table->id();
+        Schema::create('taches', function (Blueprint $table) {
+            $table->id();
             $table->string('intitule');
             $table->dateTime('deadline');
             $table->text('description');
@@ -22,9 +22,9 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->string('projectname');
             $table->foreignId('project_id')->constrained()->onDelete('cascade');
-            $table->timestamps();*/
             $table->string('status')->default('InProgress');
             $table->string('important')->default(0);
+            $table->timestamps();
         });
     }
 
@@ -35,6 +35,6 @@ return new class extends Migration
      */
     public function down()
     {
-      //  Schema::dropIfExists('taches');
+        Schema::dropIfExists('taches');
     }
 };

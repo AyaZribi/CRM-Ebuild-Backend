@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('client_email');
             $table->date('date_creation');
             $table->integer('nombre_operations')->default(0);
+            $table->boolean('calculateTtc')->default(true);
+            $table->integer('invoiced')->default(0);
+            $table->text('note')->nullable();
             $table->timestamps();
         });
     }
