@@ -105,7 +105,7 @@
             <tbody>
             <td>
 
-                <strong style="font-size: 9px; font-family: Bold,serif; color: #a22b41;">De</strong>
+                <strong style="font-size: 20px; font-family: Bold,serif; color: #a22b41;">De</strong>
                 <hr style="border: 1px solid #a22b41;">
                 <p style="font-size: 16px;background-color: #eee;" > EBUILD</p>
                 <p><strong>Matricule Fiscal:</strong></p>
@@ -116,7 +116,7 @@
         <td >
 
 
-                <strong style=" font-size: 9px;font-family: Bold,serif;color: #a22b41;">À</strong>
+                <strong style=" font-size: 20px;font-family: Bold,serif;color: #a22b41;">À</strong>
                 <hr style="border: 1px solid #a22b41;">
                 <p style="font-size: 16px;background-color: #eee;"> {{ $facture->client }}</p>
                 <p><strong>Email:</strong> {{ $facture->client_email }}</p>

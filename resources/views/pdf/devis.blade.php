@@ -121,7 +121,6 @@
             </div>
         </div>
         <div>
-            <h1 style="margin-bottom: -150px;margin-left: 220px;"></h1>
             <h1 style="text-align: right;"><strong>Numéro </strong><small>{{ $devis->formatted_id }}</small></h1>
             <h1 style="margin-right: 0px;text-align: right;"><strong>Date </strong><small>{{ $devis->created_at->format('d/m/Y ') }}</small></h1>
             <h1 style="margin-top: 0px"></h1>

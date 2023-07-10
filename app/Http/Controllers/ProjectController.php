@@ -32,9 +32,9 @@ class ProjectController extends Controller
             'client_email' => 'required|string|email|max:255',
             'projectname' => 'required|string|unique:projects',
             'typeofproject_id' => 'required|exists:typeofprojects,id',
-            'frameworks' => 'required|array',
-            'frameworks.*' => 'required|exists:frameworks,id',
-            'project_database' => 'required|string',
+            'frameworks' => 'array',
+            'frameworks.*' => 'exists:frameworks,id',
+            'database' => 'required|string',
             'description' => 'required|string',
             'datecreation' => 'required|date',
             'deadline' => 'required|date',
@@ -48,7 +48,7 @@ class ProjectController extends Controller
         $project = new Project();
         $project->projectname = $request->input('projectname');
         $project->typeofproject_id = $request->input('typeofproject_id');
-        $project->project_database = $request->input('project_database');
+        $project->database = $request->input('database');
         $project->description = $request->input('description');
         $project->datecreation = $request->input('datecreation');
         $project->deadline = $request->input('deadline');
@@ -58,6 +58,12 @@ class ProjectController extends Controller
 
         $project->save();
 
+        // Assign frameworks to the project
+        $frameworks = $request->input('frameworks');
+        if ($frameworks) {
+            $project->frameworks()->sync($frameworks); // Use sync() method instead of attach()
+        }
+
         // Assign staff to the project
         $staff = $request->input('staff');
         foreach ($staff as $staffName) {
@@ -65,9 +71,7 @@ class ProjectController extends Controller
             $project->personnel()->attach($personnel);
         }
 
-        // Assign frameworks to the project
-        $frameworks = $request->input('frameworks');
-        $project->frameworks()->attach($frameworks);
+
 
         // Send email to all staff
         $staffEmails = Personnel::whereIn('Name', $staff)->pluck('Email')->toArray();
@@ -85,81 +89,91 @@ class ProjectController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        // Find the project
+        $project = Project::findOrFail($id);
+
         // Validate the incoming request
         $request->validate([
             'client_email' => 'required|string|email|max:255',
-            'projectname' => 'required|string',
-            'typeofproject' => 'required|string',
-            'frameworks' => 'required|string',
+            'projectname' => 'required|string|unique:projects,projectname,' . $project->id,
+            'typeofproject_id' => 'required|exists:typeofprojects,id',
+            'frameworks' => 'array',
+            'frameworks.*' => 'exists:frameworks,id',
             'database' => 'required|string',
             'description' => 'required|string',
             'datecreation' => 'required|date',
             'deadline' => 'required|date',
-            'etat' => 'required|string',
+            //'etat' => 'required|string',
             'staff' => 'required|array'
         ]);
 
-        $project = Project::findOrFail($id);
         $client = Client::where('email', $request->input('client_email'))->firstOrFail();
 
-        // Update the project and assign staff
+        // Update the project
         $project->projectname = $request->input('projectname');
-        $project->typeofproject = $request->input('typeofproject');
-        $project->frameworks = $request->input('frameworks');
+        $project->typeofproject_id = $request->input('typeofproject_id');
         $project->database = $request->input('database');
         $project->description = $request->input('description');
         $project->datecreation = $request->input('datecreation');
         $project->deadline = $request->input('deadline');
-        $project->etat = $request->input('etat');
+        $project->etat = $request->input('etat') ?? "Pending";
         $project->client = $client->name;
-        $project->client_email = $request['client_email'];
+        $project->client_email = $request->input('client_email');
 
         $project->save();
 
-        // Remove previous staff assigned to the project
-        $project->personnel()->detach();
-
-        // Assign new staff to the project
-        $staff = $request->input('staff');
-        foreach ($staff as $staffName) {
-            $personnel = Personnel::where('Name', $staffName)->firstOrFail();
-            $project->personnel()->attach($personnel);
+        // Sync frameworks for the project
+        $frameworks = $request->input('frameworks');
+        if ($frameworks) {
+            $project->frameworks()->sync($frameworks);
+        } else {
+            $project->frameworks()->detach();
         }
 
-        // Send email to all staff
-        $staffEmails = Personnel::whereIn('Name', $staff)->pluck('Email')->toArray();
-        Mail::to($staffEmails)->send(new ProjectCreated($project));
+        // Sync staff for the project
+        $staff = $request->input('staff');
+        $personnelIds = Personnel::whereIn('Name', $staff)->pluck('id')->toArray();
+        $project->personnel()->sync($personnelIds);
 
-        return response()->json(['message' => 'Project updated successfully'], 200);
+        return response()->json(['message' => 'Project updated successfully']);
     }
 
 
 
     public function destroy($id, Request $request)
     {
-        $user = $request->user();
-        if (!$user->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
-        }
         $project = Project::findOrFail($id);
         $project->delete();
 
-        return response()->json(['message' => 'Project deleted successfully'], 200);
+        return response()->json(['message' => 'Project deleted successfully']);
     }
 
 
     public function show($id,Request $request)
     {
-        $user = $request->user();
-        /*if (!$user->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
-        }*/
-        $project = Project::with('personnel')->findOrFail($id);
-        $project->unsetRelation('personnel');
-         foreach ($project->personnel as $personnelMember) {
-                               $personnelMember->makeHidden('pivot');
-                           }
-        return response()->json(['project' => $project], 200);
+        $project = Project::findOrFail($id);
+
+        // Retrieve additional information related to the project, such as frameworks and personnel
+        $frameworks = $project->frameworks()->pluck('name')->toArray();
+        $personnel = $project->personnel()->pluck('Name')->toArray();
+        $typeofproject = $project->typeofproject()->pluck('name')->toArray();
+
+        // Prepare the response data
+        $responseData = [
+            'projectname' => $project->projectname,
+            'typeofproject' => $typeofproject,
+            'database' => $project->database,
+            'description' => $project->description,
+            'datecreation' => $project->datecreation,
+            'deadline' => $project->deadline,
+            'etat' => $project->etat,
+            'client' => $project->client,
+            'client_email' => $project->client_email,
+            'frameworks' => $frameworks,
+            'personnel' => $personnel,
+        ];
+
+        return response()->json($responseData);
     }
 
 

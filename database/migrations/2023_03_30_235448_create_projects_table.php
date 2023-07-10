@@ -18,7 +18,7 @@ return new class extends Migration
             $table->id();
             $table->string('projectname')->unique();
             $table->unsignedBigInteger('typeofproject_id');
-            $table->unsignedBigInteger('framework_id');
+            $table->unsignedBigInteger('framework_id')->nullable();
             $table->string('database');
             $table->string('description');
             $table->date('datecreation');
