@@ -10,7 +10,7 @@
             font-size: 12px;
         }
         .facture-header {
-        // background-color: #eee;
+         background-color: #f2e3ea;
             padding: 20px;
         }
         .header {
@@ -30,14 +30,17 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
         }
         table th, table td {
-            border: 1px solid black;
+            border: #ffffff;
             padding: 5px;
+            width: 200px;
         }
+
+
         table th {
-            background-color: #f2e3ea;
+            background-color: #ffffff;
             font-weight: bold;
         }
 
@@ -85,117 +88,117 @@
 </head>
 <body>
 <div class="vertical-text"><strong style="color: #000000;">FACTURE  </strong>N°{{ $facture->formatted_id }}</div>
-<div class="header">
-    <div class="facture-header">
-        <div class="company-info" >
-            <h2 style="font-size: 30px; font-family: Bold,serif ; color: #a22b41;">EBUILD</h2>
+    <table class="facture-header">
+        <tr>
+
+            <th>
+            <h2 style="font-size: 30px;width: 400px; font-family: Bold,serif ; color: #a22b41;">EBUILD</h2>
             <p><strong>MF: EBUILD, SARL immatriculée au registre national </strong></p>
             <p><strong>des entreprises sous l’identiant unique 1751386/T .</strong></p>
 
             <p><strong>N° de téléphone:</strong>98157896</p>
 
+            </th>
+        </tr>
+        </table>
+        <table>
+            <tbody>
+            <td>
 
-
-            <div style="margin-right: 140px;">
-
-                <p style="font-size: 20px; font-family: Bold,serif; display: inline-block;color: #a22b41;">De</p>
+                <strong style="font-size: 9px; font-family: Bold,serif; color: #a22b41;">De</strong>
                 <hr style="border: 1px solid #a22b41;">
                 <p style="font-size: 16px;background-color: #eee;" > EBUILD</p>
                 <p><strong>Matricule Fiscal:</strong></p>
                 <p>EBUILD, SARL immatriculée au</p>
                 <p>registre national des entreprises </p>
                 <p>sous l’identiant unique 1751386/T.</p>
-            </div>
-        </div>
-        <div class="client-info">
-            <h1 style="margin-bottom: 135px;margin-left: -80px;"></h1>
-            <h1 style="text-align: right;"></h1>
-            <h1 style="margin-left: -80px;margin-bottom:-550px;"> </h1>
+            </td>
+        <td >
 
-            <div style="margin-right: 230px;text-align: left;margin-left: -100px;">
-                <p style="font-size: 20px; font-family: Bold,serif; display: inline-block;color: #a22b41;">À</p>
+
+                <strong style=" font-size: 9px;font-family: Bold,serif;color: #a22b41;">À</strong>
                 <hr style="border: 1px solid #a22b41;">
                 <p style="font-size: 16px;background-color: #eee;"> {{ $facture->client }}</p>
                 <p><strong>Email:</strong> {{ $facture->client_email }}</p>
                 <p><strong>N° de téléphone:</strong> {{ $phone_number }}</p>
-            </div>
-        </div>
-        <div>
-            <h1 style="margin-bottom: -150px;margin-left: 220px;"></h1>
-            <h1 style="text-align: right;"><strong>Numéro </strong><small>{{ $facture->formatted_id }}</small></h1>
-            <h1 style="margin-right: 0px;text-align: right;"><strong>Date </strong><small>{{ $facture->created_at->formatLocalized('%a. %d %B %Y') }}</small></h1>
-            <h1 style="margin-top: 0px"></h1>
-        </div>
 
-        <div class="clear"></div>
-    </div>
+        </td>
+        <td style="font-size: 7px;">
+            <h1><strong>Numéro </strong><small>{{ $facture->formatted_id }}</small></h1>
+            <h1><strong>Date </strong><small>{{ $facture->created_at->formatLocalized('%a. %d %B %Y') }}</small></h1>
+
+        </td>
+
+        </tbody>
+
+    </table>
+
 </div>
 
 <div class="header" >
-    <img src="{{ asset('resources/images/logo.svg') }}" alt="Logo">
-
+{{--<img src="{{ asset('resources/images/logo.svg') }}" alt="Logo">--}}
 
 </div>
 
 <table style="margin-left: 20px;">
-    <thead>
-    <tr>
-        <th><strong>Nature</strong></th>
-        <th><strong>Quantité</strong></th>
-        <th><strong>Montant HT</strong></th>
-        @if (!is_null($facture->operationfactures->first()->montant_ttc))
-            <th><strong>Montant TTC</strong></th>
-        @endif
-    </tr>
-    </thead>
-    <tbody>
-    @foreach ($facture->operationfactures as $operation)
-        <tr>
-            <td>{{ $operation->nature }}</td>
-            <td>{{ $operation->quantité }}</td>
-            <td>{{ $operation->montant_ht }}</td>
-            @if (!is_null($operation->montant_ttc))
-                <td>{{ $operation->montant_ttc }}</td>
-            @endif
-        </tr>
-    @endforeach
-    @if (!is_null($facture->note))
-        <tr>
-            <td colspan="{{ !is_null($facture->operationfactures->first()->montant_ttc) ? 4 : 3}}" >
-                <strong>Note:</strong> {{ $facture->note }}</td>
-        </tr>
-    @endif
-    </tbody>
+  <thead>
+  <tr>
+      <th><strong>Nature</strong></th>
+      <th><strong>Quantité</strong></th>
+      <th><strong>Montant HT</strong></th>
+      @if (!is_null($facture->operationfactures->first()->montant_ttc))
+          <th><strong>Montant TTC</strong></th>
+      @endif
+  </tr>
+  </thead>
+  <tbody>
+  @foreach ($facture->operationfactures as $operation)
+      <tr>
+          <td>{{ $operation->nature }}</td>
+          <td>{{ $operation->quantité }}</td>
+          <td>{{ $operation->montant_ht }}</td>
+          @if (!is_null($operation->montant_ttc))
+              <td>{{ $operation->montant_ttc }}</td>
+          @endif
+      </tr>
+  @endforeach
+  @if (!is_null($facture->note))
+      <tr>
+          <td colspan="{{ !is_null($facture->operationfactures->first()->montant_ttc) ? 4 : 3}}" >
+              <strong>Note:</strong> {{ $facture->note }}</td>
+      </tr>
+  @endif
+  </tbody>
 </table>
 
 <div class="totals">
-    <table style="width: 220px; margin-left: 400px; text-align: right;">
-        <h1 style="margin-left: 60px;"><small>TOTAUX</small></h1>
-        <tr>
-            <th><strong>Total Montant HT</strong></th>
-            <td>{{ $facture->total_montant_ht }}<strong>DT</strong></td>
-        </tr>
-        @if (!is_null($facture->operationfactures->first()->montant_ttc))
-            <tr>
-                <th><strong>Taux TVA</strong></th>
-                <td>{{ $operation->taux_tva }}%</td>
-            </tr>
-        @endif
-        <tr>
-            <th><strong>TIMBRE</strong></th>
-            <td>1.00<strong>DT</strong></td>
-        </tr>
-        <tr>
-            <th><strong>TOTAL À PAYER</strong></th>
-            <td>{{ $facture->total_montant_ttc }}<strong>DT</strong></td>
-        </tr>
+  <table style="width: 220px; margin-left: 400px; text-align: right;">
+      <h1 style="margin-left: 60px;"><small>TOTAUX</small></h1>
+      <tr>
+          <th><strong>Total Montant HT</strong></th>
+          <td>{{ $facture->total_montant_ht }}<strong>DT</strong></td>
+      </tr>
+      @if (!is_null($facture->operationfactures->first()->montant_ttc))
+          <tr>
+              <th><strong>Taux TVA</strong></th>
+              <td>{{ $operation->taux_tva }}%</td>
+          </tr>
+      @endif
+      <tr>
+          <th><strong>TIMBRE</strong></th>
+          <td>1.00<strong>DT</strong></td>
+      </tr>
+      <tr>
+          <th><strong>TOTAL À PAYER</strong></th>
+          <td>{{ $facture->total_montant_ttc }}<strong>DT</strong></td>
+      </tr>
 
-    </table>
+  </table>
 
-    <div style="margin-left: 50px;">
-        <p><strong>Arrêter La Présente Facture A La Somme De:</strong></p>
-        <p>{{ $facture->total_montant_letters }}</p>
-    </div>
+  <div style="margin-left: 50px;">
+      <p><strong>Arrêter La Présente Facture A La Somme De:</strong></p>
+      <p>{{ $facture->total_montant_letters }}</p>
+  </div>
 </div>
 </body>
 </html>

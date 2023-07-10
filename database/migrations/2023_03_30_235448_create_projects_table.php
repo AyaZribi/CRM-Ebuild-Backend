@@ -12,21 +12,24 @@ return new class extends Migration
      * @return void
      */
 
-        public function up()
+    public function up()
     {
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
-            $table->string('client');
-            $table->string('client_email');
-            $table->string('projectname');
-            $table->string('typeofproject');
-            $table->string('frameworks');
+            $table->string('projectname')->unique();
+            $table->unsignedBigInteger('typeofproject_id');
+            $table->unsignedBigInteger('framework_id');
             $table->string('database');
-            $table->text('description');
+            $table->string('description');
             $table->date('datecreation');
             $table->date('deadline');
-            $table->string('etat');
+            $table->enum('etat', ['pending', 'in progress', 'completed'])->default('pending');
+            $table->string('client');
+            $table->string('client_email');
             $table->timestamps();
+
+            $table->foreign('typeofproject_id')->references('id')->on('typeofprojects')->onDelete('cascade');
+            $table->foreign('framework_id')->references('id')->on('frameworks')->onDelete('cascade');
         });
     }
 

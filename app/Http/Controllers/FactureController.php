@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+
+use Dompdf\Options;
 use App\Mail\FacturePdf;
 use App\Models\Client;
 use App\Models\Facture;
 use App\Models\User;
-use Barryvdh\DomPDF\PDF;
-//use Barryvdh\DomPDF\Facade\Pdf;
+//use Barryvdh\DomPDF\PDF;
+use Barryvdh\DomPDF\Facade\Pdf;
 //use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Http\Request;
 
@@ -152,16 +154,16 @@ class FactureController extends Controller
         return $result;
     }
 
-    public function generatePdf(Facture $facture)
+   public function generatePdf($id,Request $request)
     {
 
 
-        $facture->load('operationfactures');
+        $facture= Facture::with('operationfactures')->findOrFail($id);
         $client = Client::where('email', $facture->client_email)->first();
         $phone_number = $client->phone_number;
 
 
-
+/*
         // Create an instance of the PDF class
         $pdf = app(PDF::class);
 
@@ -187,14 +189,23 @@ class FactureController extends Controller
         $pdf->setOptions(['isHTML5ParserEnabled' => true, 'isRemoteEnabled' => true]);
         $pdf->getDomPDF()->setHttpContext($contxt);
         $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+        $dompdf->render();*/
+      /*  $options = new Options();
+        $options->setIsRemoteEnabled(true); // Autoriser le chargement d'images distantes
+        $dompdf = new Dompdf($options);*/
 
-        return $dompdf->stream("facture-{$facture->id}.pdf") ;$pdf->download('facture.pdf');
+
+        $pdf = PDF::loadView('pdf.facture', compact('facture', 'phone_number'));
+
+      //  $dompdf->stream("facture.pdf");
+
+        //return $dompdf->stream("facture-{$facture->id}.pdf") ;
+        return $pdf->download('facture.pdf');
 
 
 
     }
-    /*public function generatePdf($id, Request $request)
+   /* public function generatePdf($id, Request $request)
     {
 
         $facture = Facture::with('operationfactures')->findOrFail($id);
@@ -206,7 +217,7 @@ class FactureController extends Controller
         $pdf = PDF::loadView('pdf.facture', compact('facture', 'phone_number','calculateTtc'));
 
         return $pdf->download('facture.pdf');
-        /* // Create an instance of the PDF class
+         // Create an instance of the PDF class
          $pdf = new Dompdf();
          // Set the path to your logo image file
         // $logo = asset('resources/images/logo.svg');
@@ -226,8 +237,8 @@ class FactureController extends Controller
          $pdf->loadHtml($html);
          $pdf->render();
          return $pdf->stream("facture-{$facture->id}.pdf");
-      */
-   // }
+
+    }*/
 
     public function update(Request $request, $id)
     {

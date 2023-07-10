@@ -63,7 +63,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/facture/{id}', [FactureController::class, 'destroy']);
     Route::get('/facture/{id}', [FactureController::class, 'show']);
     Route::get('/factures', [FactureController::class, 'showall']);
-    Route::get('/factures/{facture}/pdf', [FactureController::class, 'generatePdf']);
+    Route::get('/factures/{id}/pdf', [FactureController::class, 'generatePdf']);
 
     //Route::get('/factures/{facture}/pdf', [FactureController::class, 'sendPdfToClient']);
     ////////////////////////devis////////////////////////
@@ -76,11 +76,25 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('devis/{id}/pdf', [DevisController::class, 'generate']);
      ////////////////////////project////////////////////////
 
-    Route::post('project/add', [ProjectController::class, 'store']);
+    Route::post('projects/add', [ProjectController::class, 'storeproject']);
     Route::get('/projects/{id}', [ProjectController::class, 'show']);
     Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);
     Route::put('/projects/{id}', [ProjectController::class, 'update']);
     Route::get('/projects', [ProjectController::class, 'showAll']);
+    // Frameworks
+    Route::post('frameworks', [ProjectController::class, 'addFramework']);
+    Route::put('frameworks/{id}', [ProjectController::class, 'updateFramework']);
+    Route::delete('frameworks/{id}', [ProjectController::class, 'deleteFramework']);
+    Route::get('frameworks', [ProjectController::class, 'viewAllFrameworks']);
+// Type of Projects
+    Route::post('typeofprojects', [ProjectController::class, 'addTypeOfProject']);
+    Route::put('typeofprojects/{id}', [ProjectController::class, 'updateTypeOfProject']);
+    Route::delete('typeofprojects/{id}', [ProjectController::class, 'deleteTypeOfProject']);
+    Route::get('typeofprojects', [ProjectController::class, 'viewAllTypeOfProjects']);
+
+
+
+
 
 // Route for showing a ticket
     Route::post('/tickets', [ProjectController::class, 'storeTicket'])->name('tickets.store');

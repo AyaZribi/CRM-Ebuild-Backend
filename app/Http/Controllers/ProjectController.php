@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Models\Framework;
+use App\Models\TypeOfProject;
 use Illuminate\Support\Facades\DB;
 use App\Mail\TicketCreated;
 use App\Models\Answer;
@@ -18,58 +20,64 @@ use App\Models\Project;
 class ProjectController extends Controller
 {
 
-    public function store(Request $request)
- {
-     $user = $request->user();
-     if (!$user->hasRole('admin')) {
-         abort(403, 'Unauthorized action.');
-     }
-     //Validate the incoming request
-    $request->validate([
-        'client_email' => 'required|string|email|max:255',
-        'projectname' => 'required|string|unique:projects',
-        'typeofproject' => 'required|string',
-        'frameworks' => 'required|string',
-        'database' => 'required|string',
-        'description' => 'required|string',
-        'datecreation' => 'required|date',
-        'deadline' => 'required|date',
-        'etat' => 'required|string',
-        'staff' => 'required|array'
-    ]);
-     $client = Client::where('email', $request->input('client_email'))->first();
+    public function storeproject(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->hasRole('admin')) {
+            abort(403, 'Unauthorized action.');
+        }
 
+        // Validate the incoming request
+        $request->validate([
+            'client_email' => 'required|string|email|max:255',
+            'projectname' => 'required|string|unique:projects',
+            'typeofproject_id' => 'required|exists:typeofprojects,id',
+            'frameworks' => 'required|array',
+            'frameworks.*' => 'required|exists:frameworks,id',
+            'project_database' => 'required|string',
+            'description' => 'required|string',
+            'datecreation' => 'required|date',
+            'deadline' => 'required|date',
+            //'etat' => 'required|string',
+            'staff' => 'required|array'
+        ]);
 
-     // Create the project and assign staff
-    $project = new Project();
-     $project->projectname = $request->input('projectname');
-     $project->typeofproject = $request->input('typeofproject');
-    $project->projectname = $request->input('projectname');
-    $project->typeofproject = $request->input('typeofproject');
-    $project->frameworks = $request->input('frameworks');
-    $project->database = $request->input('database');
-    $project->description = $request->input('description');
-    $project->datecreation = $request->input('datecreation');
-    $project->deadline = $request->input('deadline');
-    $project->etat = $request->input('etat');
-    $project->client = $client->name;
-    $project->client_email = $request['client_email'];
+        $client = Client::where('email', $request->input('client_email'))->firstOrFail();
 
-    $project->save();
+        // Create the project and assign staff
+        $project = new Project();
+        $project->projectname = $request->input('projectname');
+        $project->typeofproject_id = $request->input('typeofproject_id');
+        $project->project_database = $request->input('project_database');
+        $project->description = $request->input('description');
+        $project->datecreation = $request->input('datecreation');
+        $project->deadline = $request->input('deadline');
+        $project->etat = $request->input('etat')?? "Pending";
+        $project->client = $client->name;
+        $project->client_email = $request->input('client_email');
 
-    // Assign staff to the project
-    $staff = $request->input('staff');
-    foreach ($staff as $staffName) {
-        $personnel = Personnel::where('Name', $staffName)->firstOrFail();
-        $project->personnel()->attach($personnel);
+        $project->save();
+
+        // Assign staff to the project
+        $staff = $request->input('staff');
+        foreach ($staff as $staffName) {
+            $personnel = Personnel::where('Name', $staffName)->firstOrFail();
+            $project->personnel()->attach($personnel);
+        }
+
+        // Assign frameworks to the project
+        $frameworks = $request->input('frameworks');
+        $project->frameworks()->attach($frameworks);
+
+        // Send email to all staff
+        $staffEmails = Personnel::whereIn('Name', $staff)->pluck('Email')->toArray();
+        Mail::to($staffEmails)->send(new ProjectCreated($project));
+
+        return response()->json(['message' => 'Project created successfully'], 201);
     }
 
-    // Send email to all staff
-    $staffEmails = Personnel::whereIn('Name', $staff)->pluck('Email')->toArray();
-    Mail::to($staffEmails)->send(new ProjectCreated($project));
 
-    return response()->json(['message' => 'Project created successfully'], 201);
-}
+
     public function update(Request $request, $id)
     {
         $user = $request->user();
@@ -563,6 +571,101 @@ class ProjectController extends Controller
 
                     return $statistics;
                 }
+
+    public function addFramework(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|unique:frameworks',
+            'picture' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $imageName = time() . '.' . $request->picture->extension();
+        $request->picture->move(public_path('framework_images'), $imageName);
+
+        $framework = new Framework();
+        $framework->name = $request->input('name');
+        $framework->picture = $imageName;
+        $framework->save();
+
+        return response()->json(['message' => 'Framework added successfully'], 201);
+    }
+
+    public function addTypeOfProject(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|unique:typeofprojects',
+        ]);
+
+        $typeofproject = new TypeOfProject();
+        $typeofproject->name = $request->input('name');
+        $typeofproject->save();
+
+        return response()->json(['message' => 'Type of project added successfully'], 201);
+    }
+    public function updateTypeOfProject(Request $request, $id)
+    {
+        $typeofproject = TypeOfProject::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|unique:typeofprojects,name,' . $typeofproject->id,
+        ]);
+
+        $typeofproject->name = $request->input('name');
+        $typeofproject->save();
+
+        return response()->json(['message' => 'Type of project updated successfully']);
+    }
+
+    public function deleteTypeOfProject($id)
+    {
+        $typeofproject = TypeOfProject::findOrFail($id);
+        $typeofproject->delete();
+
+        return response()->json(['message' => 'Type of project deleted successfully']);
+    }
+
+    public function viewAllTypeOfProjects()
+    {
+        $typeofprojects = TypeOfProject::all();
+
+        return response()->json(['typeofprojects' => $typeofprojects]);
+    }
+
+    public function updateFramework(Request $request, $id)
+    {
+        $framework = Framework::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|unique:frameworks,name,' . $framework->id,
+            'picture' => 'image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        if ($request->hasFile('picture')) {
+            $imageName = time() . '.' . $request->picture->extension();
+            $request->picture->move(public_path('framework_images'), $imageName);
+            $framework->picture = $imageName;
+        }
+
+        $framework->name = $request->input('name');
+        $framework->save();
+
+        return response()->json(['message' => 'Framework updated successfully']);
+    }
+
+    public function deleteFramework($id)
+    {
+        $framework = Framework::findOrFail($id);
+        $framework->delete();
+
+        return response()->json(['message' => 'Framework deleted successfully']);
+    }
+
+    public function viewAllFrameworks()
+    {
+        $frameworks = Framework::all();
+
+        return response()->json(['frameworks' => $frameworks]);
+    }
 
 
 

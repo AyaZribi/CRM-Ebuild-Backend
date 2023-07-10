@@ -60,33 +60,36 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="logo">EBUILD</h1>
-        <h1>New Project Created</h1>
+<div class="container">
+    <h1 class="logo">EBUILD</h1>
+    <h1>New Project Created</h1>
 
-        <p>A new project has been created:</p>
+    <p>A new project has been created:</p>
 
-        <ul>
-            <li><strong>Project Name:</strong> {{ $project->projectname }}</li>
-            <li><strong>Type of Project:</strong> {{ $project->typeofproject }}</li>
-            <li><strong>Frameworks:</strong> {{ $project->frameworks }}</li>
-            <li><strong>Database:</strong> {{ $project->database }}</li>
-            <li><strong>Description:</strong> {{ $project->description }}</li>
-            <li><strong>Date Created:</strong> {{ $project->datecreation }}</li>
-            <li><strong>Deadline:</strong> {{ $project->deadline }}</li>
-            <li><strong>Status:</strong> {{ $project->etat }}</li>
-        </ul>
-
-        <p>Assigned staff:</p>
-
-        <ul>
-
-            @foreach ($project->personnel as $personnel)
-                <li>{{ $personnel->name }}</li>
+    <ul>
+        <li><strong>Project Name:</strong> {{ $project->projectname }}</li>
+        <li><strong>Type of Project:</strong> {{ $project->typeofproject->name }}</li>
+        <li><strong>Frameworks:</strong>
+            @foreach ($project->frameworks as $framework)
+                {{ $framework->name }},
             @endforeach
-        </ul>
+        </li>
+        <li><strong>Database:</strong> {{ $project->project_database }}</li>
+        <li><strong>Description:</strong> {{ $project->description }}</li>
+        <li><strong>Date Created:</strong> {{ $project->datecreation }}</li>
+        <li><strong>Deadline:</strong> {{ $project->deadline }}</li>
+        <li><strong>Status:</strong> {{ $project->etat }}</li>
+    </ul>
 
-        <p class="footer">Thank you for using our platform!</p>
-    </div>
+    <p>Assigned staff:</p>
+
+    <ul>
+        @foreach ($project->personnel as $personnel)
+            <li>{{ $personnel->Name }}</li>
+        @endforeach
+    </ul>
+
+    <p class="footer">Thank you for using our platform!</p>
+</div>
 </body>
 </html>

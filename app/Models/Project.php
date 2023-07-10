@@ -32,4 +32,13 @@ class Project extends Model
     {
         return $this->hasMany(Ticket::class);
     }
+    public function typeofproject()
+    {
+        return $this->belongsTo(TypeOfProject::class);
+    }
+
+    public function frameworks()
+    {
+        return $this->belongsToMany(Framework::class);
+    }
 }
